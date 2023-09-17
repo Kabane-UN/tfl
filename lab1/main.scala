@@ -1,12 +1,12 @@
 import scala.io.Source.fromFile
 import java.io.File,java.io.PrintWriter
-import math.max
 
-class ParserException extends RuntimeException{
-  override def toString: String = {
-    "Parser Exception("
-  }
-}
+// тоже часть старого парсера
+//class ParserException extends RuntimeException{
+//  override def toString: String = {
+//    "Parser Exception("
+//  }
+//}
 package ArcAlgebra{
   sealed trait Exp
   class ArcAlgebraException extends RuntimeException{
@@ -29,7 +29,7 @@ package ArcAlgebra{
 
   private final case class ArcMul(args: List[Exp]) extends Exp {
     override def toString: String = {
-      var polish = "(+ "
+      var polish = s"(arcMul${args.length} "
       for (arg <- args) {
         polish += s"${arg.toString} "
       }
@@ -120,6 +120,26 @@ package ArcAlgebra{
       }
       maxCount
   }
+  def countMaxArcMulArgs(exp: Exp, count: Int = 2): Int = exp match {
+    case Coefficient(_, exp1) =>
+      exp1 match {
+        case null => count
+        case _ => countMaxArcMulArgs(exp1, count)
+
+      }
+    case ArcMul(args) =>
+      var maxCount = count max args.length
+      for (arg <- args) {
+        maxCount = maxCount max countMaxArcMulArgs(arg, maxCount)
+      }
+      maxCount
+    case ArcAdd(args) =>
+      var maxCount = count
+      for (arg <- args) {
+        maxCount = maxCount max countMaxArcMulArgs(arg, maxCount)
+      }
+      maxCount
+  }
 }
 
 
@@ -139,6 +159,15 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
   var e: Coefficient = null
   var f: Coefficient = null
 
+
+  private var nameA = ""
+  private var nameB = ""
+  private var nameC = ""
+  private var nameD = ""
+  private var nameE = ""
+  private var nameF = ""
+
+
   def coefficientsToString(): String = {
     s"""a = ${this.a}
        |b = ${this.b}
@@ -154,6 +183,11 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
       countMaxArcAddArgs(this.e) max countMaxArcAddArgs(this.f)
   }
 
+  private def countMaxArcMulArgsOfThis(): Int = {
+    countMaxArcMulArgs(this.a) max countMaxArcMulArgs(this.b) max countMaxArcMulArgs(this.c) max countMaxArcMulArgs(this.d) max
+      countMaxArcMulArgs(this.e) max countMaxArcMulArgs(this.f)
+  }
+
   private def setCoefficients(newA: Coefficient, newB: Coefficient, newC: Coefficient,
                               newD: Coefficient, newE: Coefficient, newF: Coefficient): Unit = {
     this.a = newA
@@ -162,6 +196,12 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
     this.d = newD
     this.e = newE
     this.f = newF
+    this.nameA = newA.toString
+    this.nameB = newB.toString
+    this.nameC = newC.toString
+    this.nameD = newD.toString
+    this.nameE = newE.toString
+    this.nameF = newF.toString
   }
 
 
@@ -181,12 +221,12 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
         var thisCoefficientF:Coefficient = null
         if (newHist.contains(s"${this.name}")){
           val entFromHist = newHist(s"${this.name}")
-          thisCoefficientA = entFromHist.a
-          thisCoefficientB = entFromHist.b
-          thisCoefficientC = entFromHist.c
-          thisCoefficientD = entFromHist.d
-          thisCoefficientE = entFromHist.e
-          thisCoefficientF = entFromHist.f
+          thisCoefficientA = Coefficient(s"${entFromHist.nameA}", null)
+          thisCoefficientB = Coefficient(s"${entFromHist.nameB}", null)
+          thisCoefficientC = Coefficient(s"${entFromHist.nameC}", null)
+          thisCoefficientD = Coefficient(s"${entFromHist.nameD}", null)
+          thisCoefficientE = Coefficient(s"${entFromHist.nameE}", null)
+          thisCoefficientF = Coefficient(s"${entFromHist.nameF}", null)
         } else {
           newNumOfCoefficients += 1
           thisCoefficientA = Coefficient(s"a$newNumOfCoefficients", null)
@@ -196,6 +236,13 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
           thisCoefficientE = Coefficient(s"e$newNumOfCoefficients", null)
           thisCoefficientF = Coefficient(s"f$newNumOfCoefficients", null)
         }
+        this.nameA = thisCoefficientA.toString
+        this.nameB = thisCoefficientB.toString
+        this.nameC = thisCoefficientC.toString
+        this.nameD = thisCoefficientD.toString
+        this.nameE = thisCoefficientE.toString
+        this.nameF = thisCoefficientF.toString
+
         this.a = simplifyAdd(simplifyMul(this.arg.a, thisCoefficientA),
           simplifyMul(this.arg.c, thisCoefficientB))
         this.b = simplifyAdd(simplifyMul(this.arg.b, thisCoefficientA),
@@ -215,8 +262,8 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
       } else {
         if (newHist.contains(s"${this.name}")){
           val entFromHist = newHist(s"${this.name}")
-          this.setCoefficients(entFromHist.a, entFromHist.b, entFromHist.c,
-            entFromHist.d, entFromHist.e, entFromHist.f)
+          this.setCoefficients(Coefficient(s"${entFromHist.nameA}", null), Coefficient(s"${entFromHist.nameB}", null), Coefficient(s"${entFromHist.nameC}", null),
+            Coefficient(s"${entFromHist.nameD}", null), Coefficient(s"${entFromHist.nameE}", null), Coefficient(s"${entFromHist.nameF}", null))
         } else {
           newNumOfCoefficients+=1
           this.setCoefficients(Coefficient(s"a$newNumOfCoefficients", null),Coefficient(s"b$newNumOfCoefficients", null),
@@ -230,9 +277,9 @@ final class Ent(fName:String, fVar: Ent, func: Boolean){
     (newHist, newNumOfCoefficients)
   }
 
-  def makeTreeAndCountMaxArcAddArgs(hist: Map[String, Ent], numOfCoefficients: Int): (Map[String, Ent], Int, Int) = {
+  def makeTreeAndCountMaxArc(hist: Map[String, Ent], numOfCoefficients: Int): (Map[String, Ent], Int, Int, Int) = {
     val (resHist, resNumOfCoefficients) = this.makeTree(hist, numOfCoefficients)
-    (resHist, resNumOfCoefficients, this.countMaxArcAddArgsOfThis())
+    (resHist, resNumOfCoefficients, this.countMaxArcAddArgsOfThis(), this.countMaxArcMulArgsOfThis())
   }
 
   override def toString: String = {
@@ -256,19 +303,22 @@ class TRS(lines: List[String]){
   private var hist: Map[String, Ent] = Map()
   private var numOfCoefficients = 0
   private var maxNumOfArgAddArgs = 2
+  private var maxNumOfArgMulArgs = 2
   for (line <- TRSLines) {
     val lineTS = line.filterNot(_.isWhitespace)
     val lineSpArr = lineTS.split("->")
     val f1 = parser(lineSpArr(0))
     val f2 = parser(lineSpArr(1))
-    var res = f1.makeTreeAndCountMaxArcAddArgs(hist, numOfCoefficients)
+    var res = f1.makeTreeAndCountMaxArc(hist, numOfCoefficients)
     hist ++= res(0)
     numOfCoefficients = res(1)
     maxNumOfArgAddArgs = maxNumOfArgAddArgs max res(2)
-    res = f2.makeTreeAndCountMaxArcAddArgs(hist, numOfCoefficients)
+    maxNumOfArgMulArgs = maxNumOfArgMulArgs max res(3)
+    res = f2.makeTreeAndCountMaxArc(hist, numOfCoefficients)
     hist ++= res(0)
     numOfCoefficients = res(1)
     maxNumOfArgAddArgs = maxNumOfArgAddArgs max res(2)
+    maxNumOfArgMulArgs = maxNumOfArgMulArgs max res(3)
     funcs = funcs :+ List(f1, f2)
     funcsCoefficientPairs = funcsCoefficientPairs :+ Map(f1.a -> f2.a,
       f1.b -> f2.b, f1.c -> f2.c,f1.d -> f2.d,f1.e -> f2.e,f1.f -> f2.f)
@@ -351,6 +401,22 @@ class TRS(lines: List[String]){
           s" (arcAdd${i-1} ${args.slice(1, args.length).mkString(" ")})))"
       }
     }
+    for (i <- 2 to this.maxNumOfArgMulArgs) {
+      val args = for (j <- 1 to i) yield s"x$j"
+      if (i == 2) {
+        resList = resList :+ s"(define-fun arcMul$i ((${args(0)} Int) (${args(1)} Int)) Int (ite (= ${args(0)} (- 10000)) ${args(0)}" +
+          s" (ite (= ${args(1)} (- 10000)) ${args(1)} (+ ${args(0)} ${args(1)}))))"
+      } else {
+        var newDefine = s"(define-fun arcMul$i ("
+        for (arg <- args) {
+          newDefine = newDefine + s"($arg Int) "
+        }
+        newDefine = newDefine.dropRight(1)
+        resList = resList :+ newDefine + s") Int (ite (= ${args(0)} (- 10000)) ${args(0)}" +
+          s" (ite (= (arcMul${i-1} ${args.slice(1, args.length).mkString(" ")}) (- 10000)) (arcMul${i-1} ${args.slice(1, args.length).mkString(" ")})" +
+          s" (+ ${args(0)} (arcMul${i-1} ${args.slice(1, args.length).mkString(" ")})))))"
+      }
+    }
     for {
       i <- 1 to numOfCoefficients
       name <- 'a' to 'f'
@@ -367,9 +433,9 @@ class TRS(lines: List[String]){
       name <- 'a' to 'f'
     } {
       if (name != 'a' && name != 'e'){
-        resList = resList :+ s"(assert (or (> $name$i 0) (= $name$i (- 10000))))"
+        resList = resList :+ s"(assert (or (>= $name$i 0) (= $name$i (- 10000))))"
       } else {
-        resList = resList :+ s"(assert (> $name$i 0))"
+        resList = resList :+ s"(assert (>= $name$i 0))"
       }
     }
     resList

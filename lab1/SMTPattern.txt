@@ -1,0 +1,5 @@
+(set-logic QF_NIA)
+(define-fun >> ((x Int) (y Int)) Bool (or (> x y) (and (= x (- 10000)) (= y (- 10000)))))
+-
+(check-sat)
+(get-model)

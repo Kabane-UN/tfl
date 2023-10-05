@@ -1,0 +1,353 @@
+$INCLUDE "Automata";
+
+$ENTRY Go {
+    = <Prout <Parse 1>>;
+*    = <Prout <TreeToStr ('or a '('con '('sfl c '('rep t'))' '('con g '('rep g'))))>>;
+}
+
+
+Parse {
+    s.Stream
+    , <Open 'r' s.Stream './tests/1.txt'> :
+    , <Get s.Stream> : e.Regex
+    , <Br 'Vars='> :
+    , <Regex (() ()) e.Regex> : (Regex (e.Tree))
+    , <Prout e.Tree> :
+*    = ;
+    , <Cp 'Vars'> : s.First e.Vars
+    , <L e.Tree> : e.Accept
+    , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
+    , <Br 'Automata='t.Automata> :
+    , <ComputeAllDeriv e.Tree> :
+*    = ;
+    , <Cp 'Automata'> : t.Automata^
+    , <Automata-PrettyPrint t.Automata> :
+    , <Automata-ToRegex t.Automata> : (e.s':'(e.AcademicRegex)'>'e.f)
+    = e.AcademicRegex;
+*    = <Automata-PrettyPrint t.Automata>;
+}
+
+Regex {
+    (e.Scanned) (e.Tree) ERR e.Msg = ((e.Scanned) (e.Tree)) ERR e.Msg;
+    (() ()) (Term (e.Parsed)) e.Tokens
+        = <Regex (Term (e.Parsed)) e.Tokens>;
+    (() ()) e.Tokens = <Regex (() ()) <Term (() ()) e.Tokens>>;
+
+    (Term (e.Tree)) '|'e.Tokens
+        = <Regex (Term Binary ('or 'e.Tree)) e.Tokens>;
+    (Term (e.Tree)) '#'e.Tokens
+        = <Regex (Term Binary ('sfl 'e.Tree)) e.Tokens>;
+    (Term (e.Tree)) e.Tokens = (Regex (e.Tree)) e.Tokens;
+
+    (Term Binary (e.Tree)) (Regex (e.Parsed)) e.Tokens
+        = <Regex (Term Binary Regex ( (e.Tree' 'e.Parsed) )) e.Tokens>;
+    (Term Binary (e.Tree)) e.Tokens
+        = <Regex (Term Binary (e.Tree)) <Regex (() ()) e.Tokens>>;
+
+    (Term Binary Regex (e.Tree)) e.Tokens = (Regex (e.Tree)) e.Tokens;
+    (Term (e.Tree)) e.Tokens = (Regex (e.Tree)) e.Tokens;
+}
+
+Normalize {
+    ('or 'e.Rest)
+    , <GetArguments ('or 'e.Rest)> : (e.R1)e.R2
+    e.Else = <Prout '\n'No rule e.Else '\n'> e.Else;
+*    e.Else = e.Else;
+}
+
+Term {
+    ((e.Scanned) (e.Tree)) ERR e.Msg = ((e.Scanned) (e.Tree)) ERR e.Msg;
+    (() (e.Tree)) (Factor (e.Parsed)) e.Tokens
+        = <Term (Factor (e.Parsed)) e.Tokens>;
+    (() (e.Tree)) e.Tokens
+        = <Term (() (e.Tree)) <Factor (() (e.Tree)) e.Tokens>>;
+
+    (Factor (e.Tree))'|'e.Tokens = (Term (e.Tree)) '|'e.Tokens;
+    (Factor (e.Tree))'#'e.Tokens = (Term (e.Tree)) '#'e.Tokens;
+    (Factor (e.Tree))')'e.Tokens = (Term (e.Tree)) ')'e.Tokens;
+
+    (Factor (e.Tree)) = (Term (e.Tree));
+    (Factor (e.Tree)) e.Tokens
+        = <Term (() (e.Tree)) <Factor (() (e.Tree)) e.Tokens>>;
+}
+
+Factor {
+    ((e.Scanned) (e.Tree)) ERR e.Msg = ((e.Scanned) (e.Tree)) ERR e.Msg;
+
+    (() ()) (Base (e.Parsed)) e.Tokens
+    , <Prout tree ()' 'Parsed is' '(e.Parsed)' 'and tokens' 'e.Tokens> :
+    , e.Tokens : {
+        '*'e.Rest = <Factor (Base (('rep 'e.Parsed))) e.Rest>;
+        '+'e.Rest = <Factor (Base (('con 'e.Parsed' '('rep 'e.Parsed)))) e.Rest>;
+        '#'e.Rest = <Factor (Base (('sfl 'e.Parsed))) e.Rest>;
+        e.Else = <Factor (Base (e.Parsed)) e.Tokens>;
+    };
+
+    (() (e.Tree)) (Base (e.Parsed)) e.Tokens
+    , <Prout tree (e.Tree)' 'Parsed is' '(e.Parsed)' 'and tokens' 'e.Tokens> :
+    , e.Tokens : {
+        '*'e.Rest
+        , e.Tree : {
+            ('sfl 'e.Arg)
+            , e.Arg : {
+                s.Char = <Factor (Base (('sfl 'e.Arg' '('rep 'e.Parsed)))) e.Rest>;
+                e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('rep 'e.Parsed)))) e.Rest>;
+            };
+            e.Some = <Factor (Base (('con 'e.Tree' '('rep 'e.Parsed)))) e.Rest>;
+        };
+        '+'e.Rest
+         , e.Tree : {
+             ('sfl 'e.Arg)
+             , e.Arg : {
+                s.Char = <Factor (Base (('sfl 'e.Arg' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
+                e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
+             };
+             e.Some = <Factor (Base (('con 'e.Tree' '('rep 'e.Parsed)))) e.Rest>;
+         };
+         '#'e.Rest
+         , e.Tree : {
+            ('sfl 'e.Arg)
+             , e.Arg : {
+                s.Char = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) '#'e.Rest>;
+                e.Expr = <Factor (Base (('sfl '('sfl 'e.Expr)' 'e.Parsed))) e.Rest>;
+             };
+             e.Some = <Factor (Base (('con 'e.Tree' 'e.Parsed))) e.Rest>;
+         };
+         s.Char e.Rest
+         , e.Tree : {
+            ('sfl 'e.Arg)
+            , e.Arg : {
+                s.Char = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) e.Tokens>;
+                e.Expr = <Factor (Base (('con '('sfl 'e.Arg)' 'e.Parsed))) e.Tokens>;
+            };
+            e.Else = <Factor (Base (('con 'e.Tree' 'e.Parsed))) e.Tokens>;
+        };
+        , e.Tree : {
+            ('sfl 'e.Arg) = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) e.Tokens>;
+            e.Else = <Factor (Base (('con 'e.Tree' 'e.Parsed)))>;
+        };
+    };
+
+    (() (e.Tree)) e.Tokens = <Factor (() (e.Tree)) <Base (() (e.Tree)) e.Tokens>>;
+
+    (Base (e.Tree)) e.Tokens = <Prout end (e.Tree)> (Factor (e.Tree)) e.Tokens;
+}
+
+Base {
+    ((e.Scanned) (e.Tree)) ERR e.Msg = (e.Tree) ERR e.Msg;
+
+    (() (e.Tree)) '(' e.Tokens = <Base ('(' (e.Tree)) e.Tokens>;
+
+    ('(' (e.Tree)) (Regex (e.Parsed)) e.Tokens
+        = <Base ('('Regex (e.Parsed)) e.Tokens>;
+    ('(' (e.Tree)) e.Tokens
+        = <Base ('(' (e.Tree)) <Regex (() ()) e.Tokens>>;
+
+    ('('Regex (e.Tree)) ')' e.Tokens = <Base ('('Regex')' (e.Tree)) e.Tokens>;
+    ('('Regex')' (e.Tree)) e.Tokens = (Base (e.Tree)) e.Tokens;
+
+    (() (e.Tree)) s.Char e.Tokens = <Base (s.Char (e.Tree)) e.Tokens>;
+    ('*' (e.Tree)) e.Tokens = (Base ('*')) e.Tokens;
+    ('+' (e.Tree)) e.Tokens = (Base ('+')) e.Tokens;
+    ('#' (e.Tree)) e.Tokens = (Base ('#')) e.Tokens;
+
+    (s.Char (e.Tree)) e.Tokens
+    , <IsAlpha s.Char> : {
+        True = <AppendToVarList s.Char>
+                (Base (s.Char)) e.Tokens;
+        False = ((e.Tree)) ERR s.Char' 'does not belong to alphabet;
+    };
+    (() (e.Tree)) = (Base (e.Tree));
+}
+
+IsAlpha {
+    s.Char
+    , <Ord s.Char> : e.Ord
+    , <Compare e.Ord <Ord '{'>> : {
+        '-'
+        , <Compare e.Ord <Ord '`'>> : {
+            '+' = True;
+            e.Else = False;
+        };
+        e.Else = False;
+    };
+}
+
+AppendToVarList {
+    s.Char
+    , <Cp 'Vars'> : e.Vars
+    , <IsIn s.Char (e.Vars)> : {
+        True = ;
+        False = <Br 'Vars='e.Vars s.Char>;
+    };
+}
+
+IsIn {
+    s.Char (e.VarsBegin s.Char e.VarsRest) = True;
+    s.Char (e.Vars) = False;
+}
+
+TreeToStr {
+    s.Char = s.Char;
+    ('con 'e.Arg' '('rep 'e.Arg))
+    = <TreeToStr e.Arg>'+';
+    ('con 'e.Args)
+    , <GetArguments ('con 'e.Args)> : (e.R1) e.R2
+    = <TreeToStr e.R1><TreeToStr e.R2>;
+    ('or 'e.Args)
+    , <GetArguments ('or 'e.Args)> : (e.R1) e.R2
+    = <Prout e.R2><TreeToStr e.R1>'|'<TreeToStr e.R2>;
+    ('sfl 'e.Args)
+    , <GetArguments ('sfl 'e.Args)> : (e.R1) e.R2
+    = <TreeToStr e.R1>'#'<TreeToStr e.R2>;
+    ('rep 'e.Arg)
+    = <TreeToStr e.Arg>'*';
+}
+
+Derivate {
+    (s.Char) s.Char = eps;
+    (s.Char) s.NotEqual = empty;
+    (s.Char) ('rep 'e.Op)
+    , <Derivate (s.Char) e.Op> : {
+        empty = empty;
+        eps = ('rep 'e.Op);
+        e.Else = <ConcatSimplify (e.Else) ('rep 'e.Op)>;
+    };
+    (s.Char) ('con 'e.R1' 'e.R2)
+    , <GetArguments ('con 'e.R1' 'e.R2)> : (e.R1^) e.R2^
+    , <L e.R1> : {
+        True = <OrSimplify
+                    (<ConcatSimplify
+                        (<Derivate (s.Char) e.R1>)
+                        e.R2>)
+                    <Derivate (s.Char) e.R2>>;
+        False = <ConcatSimplify
+                    (<Derivate (s.Char) e.R1>)
+                    e.R2>;
+    };
+    (s.Char) ('or 'e.R1' 'e.R2)
+    , <GetArguments ('or 'e.R1' 'e.R2)> : (e.R1^) e.R2^
+    = <OrSimplify
+        (<Derivate (s.Char) e.R1>)
+        <Derivate (s.Char) e.R2>>;
+    (s.Char) ('sfl 'e.R1' 'e.R2)
+    , <GetArguments ('sfl 'e.R1' 'e.R2)> : (e.R1^) e.R2^
+    = <OrSimplify
+        (<ShuffleSimplify
+            (<Derivate (s.Char) e.R1>)
+            e.R2>)
+        <ShuffleSimplify
+            (e.R1)
+            <Derivate (s.Char) e.R2>>
+        >;
+}
+
+Memoized-Derivate {
+    (s.Char) e.Arg
+    , <Cp 'DerivM'> : e.History
+    , e.History : {
+        e.Hist-B (((s.Char) e.Arg) e.Result) e.Hist-E = True e.Result;
+        e.NotFound
+        , <Derivate (s.Char) e.Arg> : e.Deriv
+        = <Br 'DerivM='e.NotFound (((s.Char) e.Arg) e.Deriv)>
+          False e.Deriv;
+    };
+}
+
+ComputeAllDeriv {
+    e.Expr
+    , <Cp 'Vars'> : e.Vars = <DerivForAll e.Vars (e.Expr)>;
+}
+
+DerivForAll {
+    s.Char e.Vars (e.Expr) = <ComputeDeriv s.Char (e.Expr)><DerivForAll e.Vars (e.Expr)>;
+    (e.Expr) = ;
+}
+
+ComputeDeriv {
+    s.Char (e.Expr)
+    , <Cp 'Automata'> : t.Automata
+    , <Memoized-Derivate (s.Char) e.Expr> : {
+        True e.Deriv = ;
+        False e.Deriv
+        , <L e.Deriv> : e.Accept
+        , e.Deriv : {
+            empty = ;
+            e.Expr
+            , <Automata-Insert t.Automata (s.Char) (e.Expr) e.Expr (e.Accept)> : t.Automata^
+            , <Br 'Automata='t.Automata> :
+            = ;
+            e.Deriv^
+            , <Automata-Insert t.Automata (s.Char) (e.Expr) e.Deriv (e.Accept)> : t.Automata^
+            , <Br 'Automata='t.Automata> :
+            = <ComputeAllDeriv e.Deriv>;
+        };
+    };
+    (e.Expr) = ;
+}
+
+
+L {
+    eps = True;
+    s.Char = False;
+    ('rep 'e.Some) = True;
+    ('con 'e.R1' 'e.R2)
+    , <GetArguments ('con 'e.R1' 'e.R2)> : (e.R1^) e.R2
+     = <And (<L e.R1>) <L e.R2>>;
+    ('or 'e.R1' 'e.R2)
+    , <GetArguments ('or 'e.R1' 'e.R2)> : (e.R1^) e.R2
+     = <Or (<L e.R1>) <L e.R2>>;
+     ('sfl 'e.R1' 'e.R2)
+     , <GetArguments ('sfl 'e.R1' 'e.R2)> : (e.R1^) e.R2
+      = <Or (<L e.R1>) <L e.R2>>;
+}
+
+GetArguments {
+    (e.Op' '(e.R1)' 'e.R2)
+    = ((e.R1)) e.R2;
+    (e.Op' 'e.R1' '(e.R2))
+    = (e.R1) (e.R2);
+    (e.Op' '(e.R1)' '(e.R2))
+    = ((e.R1)) (e.R2);
+    (e.Op' 'e.R1' 'e.R2)
+    = (e.R1) e.R2;
+}
+
+ShuffleSimplify {
+    (e.R) eps = e.R;
+    (eps) e.R = e.R;
+    (e.R) empty = empty;
+    (empty) e.R = empty;
+    (('con 'e.A' 'e.R1)) ('con 'e.B' 'e.R2)
+    =  <OrSimplify
+        (<ConcatSimplify (e.A) <ShuffleSimplify (e.R1) <ConcatSimplify (e.B) e.R2>>>)
+        <ConcatSimplify (e.B) <ShuffleSimplify (<ConcatSimplify (e.A) e.R1>) e.R2>>
+    >;
+    (e.R1) e.R2 = ('sfl 'e.R1' 'e.R2);
+
+}
+
+OrSimplify {
+    (e.R) empty = e.R;
+    (empty) e.R = e.R;
+    (e.R1) e.R1 = e.R1;
+    (e.R1) e.R2 = ('or 'e.R1' 'e.R2);
+}
+
+ConcatSimplify {
+    (eps) e.R2 = e.R2;
+    (e.R1) eps = e.R1;
+    (empty) e.R2 = empty;
+    (e.R1) empty = empty;
+    (e.R1) e.R2 = ('con 'e.R1' 'e.R2);
+}
+
+And {
+    (True) True = True;
+    e.Else = False;
+}
+
+Or {
+    (False) False = False;
+    e.Else = True;
+}

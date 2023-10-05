@@ -2,9 +2,8 @@ $INCLUDE "Automata";
 
 $ENTRY Go {
     = <Prout <Parse 1>>;
-*    = <Prout <TreeToStr ('or a '('con '('sfl c '('rep t'))' '('con g '('rep g'))))>>;
+*     = <Prout <OrSimplify ('w') 'a'>>;
 }
-
 
 Parse {
     s.Stream
@@ -15,15 +14,15 @@ Parse {
     , <Prout e.Tree> :
 *    = ;
     , <Cp 'Vars'> : s.First e.Vars
-    , <L e.Tree> : e.Accept
-    , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
-    , <Br 'Automata='t.Automata> :
-    , <ComputeAllDeriv e.Tree> :
-*    = ;
-    , <Cp 'Automata'> : t.Automata^
-    , <Automata-PrettyPrint t.Automata> :
-    , <Automata-ToRegex t.Automata> : (e.s':'(e.AcademicRegex)'>'e.f)
-    = e.AcademicRegex;
+*    , <L e.Tree> : e.Accept
+*    , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
+*    , <Br 'Automata='t.Automata> :
+*    , <ComputeAllDeriv e.Tree> :
+    = ;
+*    , <Cp 'Automata'> : t.Automata^
+*    , <Automata-PrettyPrint t.Automata> :
+*    , <Automata-ToRegex t.Automata> : (e.s':'(e.AcademicRegex)'>'e.f)
+*    = e.AcademicRegex;
 *    = <Automata-PrettyPrint t.Automata>;
 }
 
@@ -44,14 +43,25 @@ Regex {
     (Term Binary (e.Tree)) e.Tokens
         = <Regex (Term Binary (e.Tree)) <Regex (() ()) e.Tokens>>;
 
-    (Term Binary Regex (e.Tree)) e.Tokens = (Regex (e.Tree)) e.Tokens;
+    (Term Binary Regex (e.Tree)) e.Tokens = (Regex (<Normalize e.Tree>)) e.Tokens;
     (Term (e.Tree)) e.Tokens = (Regex (e.Tree)) e.Tokens;
 }
 
 Normalize {
+    ('or 's.A1 ('or 's.A2' 's.A3)) =
+    <OrSimplify
+        (<Normalize
+            <OrSimplify
+                (<Normalize s.A1>)
+                <Normalize s.A2>
+            >
+        >)
+        s.A3
+    >;
     ('or 'e.Rest)
     , <GetArguments ('or 'e.Rest)> : (e.R1)e.R2
-    e.Else = <Prout '\n'No rule e.Else '\n'> e.Else;
+    = <OrSimplify (<Normalize e.R1>) <Normalize e.R2>>;
+    e.Else =  e.Else;
 *    e.Else = e.Else;
 }
 
@@ -116,9 +126,9 @@ Factor {
          s.Char e.Rest
          , e.Tree : {
             ('sfl 'e.Arg)
-            , e.Arg : {
-                s.Char = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) e.Tokens>;
-                e.Expr = <Factor (Base (('con '('sfl 'e.Arg)' 'e.Parsed))) e.Tokens>;
+            , <Lenw e.Arg> : {
+                1 e.Arg = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) e.Tokens>;
+                s.Len e.Expr = <Factor (Base (('con '('sfl 'e.Arg)' 'e.Parsed))) e.Tokens>;
             };
             e.Else = <Factor (Base (('con 'e.Tree' 'e.Parsed))) e.Tokens>;
         };
@@ -331,7 +341,41 @@ OrSimplify {
     (e.R) empty = e.R;
     (empty) e.R = e.R;
     (e.R1) e.R1 = e.R1;
-    (e.R1) e.R2 = ('or 'e.R1' 'e.R2);
+    (e.R1) e.R2
+    , <LexOrd (e.R1) e.R2> : {
+        '0' = ('or 'e.R1' 'e.R2);
+        '1' = ('or 'e.R2' 'e.R1);
+    };
+    =
+}
+
+LexOrd {
+    (e.R1) e.R2
+    , <Prout (e.R1) e.R2> :
+    , <TreeToStr e.R1> : e.R1^
+    , <TreeToStr e.R2> : e.R2^
+    , <Lenw e.R1> : s.L1 e.R1^
+    , <Lenw e.R2> : s.L2 e.R2^
+    , <Compare s.L1 s.L2> : {
+        '-' = '0';
+        '+' = '1';
+        '0'
+         , <CmpStr (e.R1) e.R2> : {
+            '1' = '1';
+            e.Else = '0';
+         };
+    };
+}
+
+CmpStr {
+    () /*empty*/ = '0';
+    (s.C1 e.S1) s.C2 e.S2
+    , <Compare <Ord s.C1> <Ord s.C2>> : {
+          '-' = '-1';
+          '+' = '1';
+          '0' = <CmpStr (e.S1) e.S2>;
+    };
+
 }
 
 ConcatSimplify {

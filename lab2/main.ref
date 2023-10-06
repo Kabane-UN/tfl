@@ -2,27 +2,30 @@ $INCLUDE "Automata";
 
 $ENTRY Go {
     = <Prout <Parse 1>>;
-*     = <Prout <OrSimplify ('w') 'a'>>;
+*     = <Prout
+*      <Normalize ('or '('rep b')' '('or a b'))>'\n'
+*     <Normalize ('or d '('or '('rep b')' '('or a b')))>>;
 }
 
 Parse {
     s.Stream
-    , <Open 'r' s.Stream './tests/1.txt'> :
-    , <Get s.Stream> : e.Regex
+    , <Open 'r' s.Stream <Arg 1>> :
+    , <Get s.Stream> : {e.Regex 0 = e.Regex; e.Regex = e.Regex;} : e.Regex
     , <Br 'Vars='> :
     , <Regex (() ()) e.Regex> : (Regex (e.Tree))
     , <Prout e.Tree> :
 *    = ;
     , <Cp 'Vars'> : s.First e.Vars
-*    , <L e.Tree> : e.Accept
-*    , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
-*    , <Br 'Automata='t.Automata> :
-*    , <ComputeAllDeriv e.Tree> :
-    = ;
-*    , <Cp 'Automata'> : t.Automata^
-*    , <Automata-PrettyPrint t.Automata> :
-*    , <Automata-ToRegex t.Automata> : (e.s':'(e.AcademicRegex)'>'e.f)
-*    = e.AcademicRegex;
+    , <L e.Tree> : e.Accept
+    , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
+    , <Br 'Automata='t.Automata> :
+    , <ComputeAllDeriv e.Tree> :
+*    = ;
+    , <Cp 'Automata'> : t.Automata^
+    , <Automata-PrettyPrint t.Automata> :
+*    = ;
+    , <Automata-ToRegex t.Automata> : (e.s':'e.AcademicRegex'>'e.f)
+    = e.AcademicRegex;
 *    = <Automata-PrettyPrint t.Automata>;
 }
 
@@ -48,21 +51,55 @@ Regex {
 }
 
 Normalize {
-    ('or 's.A1 ('or 's.A2' 's.A3)) =
-    <OrSimplify
-        (<Normalize
-            <OrSimplify
-                (<Normalize s.A1>)
-                <Normalize s.A2>
-            >
-        >)
-        s.A3
-    >;
-    ('or 'e.Rest)
-    , <GetArguments ('or 'e.Rest)> : (e.R1)e.R2
-    = <OrSimplify (<Normalize e.R1>) <Normalize e.R2>>;
-    e.Else =  e.Else;
-*    e.Else = e.Else;
+*    ('or 's.A1' 'e.A2) =
+*    ('or 's.A1' 'e.A2);
+*    ('or 'e.A1 ('or 's.A2' 'e.A3)) =
+*    ('or '('or 'e.A1 s.A2)' 'e.A3);
+    ('or 'e.A1 ('or 'e.A2' 'e.A3))
+    = <Normalize ('or '<Normalize ('or 'e.A1 e.A2)>' '<Normalize e.A3>)>;
+    ('or 'e.A1' 'e.A1) = e.A1;
+    e.Else = e.Else;
+}
+
+OrSimplify {
+    (e.R) empty = e.R;
+    (empty) e.R = e.R;
+    (e.R1) e.R1 = e.R1;
+    (eps) e.R = <Normalize ('or 'eps' 'e.R)>;
+    (e.R) eps = <Normalize ('or 'eps' 'e.R)>;
+    (e.R1) e.R2
+    , <LexOrd (e.R1) e.R2> : {
+        '0' = <Normalize ('or 'e.R1' 'e.R2)>;
+        '1' = <Normalize ('or 'e.R2' 'e.R1)>;
+    };
+}
+
+LexOrd {
+    (e.R1) e.R2
+*    , <Prout (e.R1) e.R2> :
+    , <TreeToStr e.R1> : e.R1^
+    , <TreeToStr e.R2> : e.R2^
+    , <Lenw e.R1> : s.L1 e.R1^
+    , <Lenw e.R2> : s.L2 e.R2^
+    , <Compare s.L1 s.L2> : {
+        '-' = '0';
+        '+' = '1';
+        '0'
+         , <CmpStr (e.R1) e.R2> : {
+            '1' = '1';
+            e.Else = '0';
+         };
+    };
+}
+
+CmpStr {
+    () /*empty*/ = '0';
+    (s.C1 e.S1) s.C2 e.S2
+    , <Compare <Ord s.C1> <Ord s.C2>> : {
+          '-' = '-1';
+          '+' = '1';
+          '0' = <CmpStr (e.S1) e.S2>;
+    };
 }
 
 Term {
@@ -206,7 +243,7 @@ TreeToStr {
     = <TreeToStr e.R1><TreeToStr e.R2>;
     ('or 'e.Args)
     , <GetArguments ('or 'e.Args)> : (e.R1) e.R2
-    = <Prout e.R2><TreeToStr e.R1>'|'<TreeToStr e.R2>;
+    = <TreeToStr e.R1>'|'<TreeToStr e.R2>;
     ('sfl 'e.Args)
     , <GetArguments ('sfl 'e.Args)> : (e.R1) e.R2
     = <TreeToStr e.R1>'#'<TreeToStr e.R2>;
@@ -243,13 +280,8 @@ Derivate {
     (s.Char) ('sfl 'e.R1' 'e.R2)
     , <GetArguments ('sfl 'e.R1' 'e.R2)> : (e.R1^) e.R2^
     = <OrSimplify
-        (<ShuffleSimplify
-            (<Derivate (s.Char) e.R1>)
-            e.R2>)
-        <ShuffleSimplify
-            (e.R1)
-            <Derivate (s.Char) e.R2>>
-        >;
+        (<ShuffleSimplify (<Derivate (s.Char) e.R1>) e.R2>)
+        <ShuffleSimplify (e.R1) <Derivate (s.Char) e.R2>>>;
 }
 
 Memoized-Derivate {
@@ -280,6 +312,7 @@ ComputeDeriv {
     , <Memoized-Derivate (s.Char) e.Expr> : {
         True e.Deriv = ;
         False e.Deriv
+        , <Prout deriv by s.Char ' ot ' e.Expr> :
         , <L e.Deriv> : e.Accept
         , e.Deriv : {
             empty = ;
@@ -337,46 +370,6 @@ ShuffleSimplify {
 
 }
 
-OrSimplify {
-    (e.R) empty = e.R;
-    (empty) e.R = e.R;
-    (e.R1) e.R1 = e.R1;
-    (e.R1) e.R2
-    , <LexOrd (e.R1) e.R2> : {
-        '0' = ('or 'e.R1' 'e.R2);
-        '1' = ('or 'e.R2' 'e.R1);
-    };
-    =
-}
-
-LexOrd {
-    (e.R1) e.R2
-    , <Prout (e.R1) e.R2> :
-    , <TreeToStr e.R1> : e.R1^
-    , <TreeToStr e.R2> : e.R2^
-    , <Lenw e.R1> : s.L1 e.R1^
-    , <Lenw e.R2> : s.L2 e.R2^
-    , <Compare s.L1 s.L2> : {
-        '-' = '0';
-        '+' = '1';
-        '0'
-         , <CmpStr (e.R1) e.R2> : {
-            '1' = '1';
-            e.Else = '0';
-         };
-    };
-}
-
-CmpStr {
-    () /*empty*/ = '0';
-    (s.C1 e.S1) s.C2 e.S2
-    , <Compare <Ord s.C1> <Ord s.C2>> : {
-          '-' = '-1';
-          '+' = '1';
-          '0' = <CmpStr (e.S1) e.S2>;
-    };
-
-}
 
 ConcatSimplify {
     (eps) e.R2 = e.R2;

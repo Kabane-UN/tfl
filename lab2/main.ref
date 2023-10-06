@@ -156,9 +156,9 @@ Factor {
             ('sfl 'e.Arg)
              , e.Arg : {
                 s.Char = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) '#'e.Rest>;
-                e.Expr = <Factor (Base (('sfl '('sfl 'e.Expr)' 'e.Parsed))) e.Rest>;
+                e.Expr = <Factor (Base (('sfl '('sfl 'e.Expr)' 'e.Parsed))) '#'e.Rest>;
              };
-             e.Some = <Factor (Base (('con 'e.Tree' 'e.Parsed))) e.Rest>;
+             e.Some = <Factor (Base (('con 'e.Tree' 'e.Parsed))) '#'e.Rest>;
          };
          s.Char e.Rest
          , e.Tree : {
@@ -312,7 +312,6 @@ ComputeDeriv {
     , <Memoized-Derivate (s.Char) e.Expr> : {
         True e.Deriv = ;
         False e.Deriv
-        , <Prout deriv by s.Char ' ot ' e.Expr> :
         , <L e.Deriv> : e.Accept
         , e.Deriv : {
             empty = ;

@@ -426,14 +426,12 @@ object main{
   }
   def main(args: Array[String]): Unit = {
     if (args.length == 5 && args(0) == "-r"){
-      val initialState = 0
-      val transitionsMatrix: Array[Array[List[String]]] = Array(
-        Array(List("("), List("a"), List[String](), List("*", ")", "#", "|")),
-        Array(List("(", "#", "|"), List("a", ")"), List("*"), List[String]()),
-        Array(List("(", "#", "|"), List("a", ")"), List[String](), List("*")),
-        Array(List[String](), List[String](), List[String](), List("a", "(", ")", "*", "#", "|"))
-      )
-      val acceptingStates: Array[Int] = Array(1, 2)
+      val lines = fromFile("regexFsm.txt").getLines()
+      var linesList: List[String] = List()
+      for (line <- lines) {
+        linesList = linesList :+ line
+      }
+      val (resFsm, _) = this.parse(linesList)
       var regexStrings: List[String] = List()
       val maxAlphabet = args(1).toInt
       val maxRegexLen = args(2).toInt
@@ -441,7 +439,7 @@ object main{
       val regexCount = args(4).toInt
       val requiredTerms = List("a", "b", "c", "d", "e")
       val termsAlphabet = requiredTerms.slice(0, maxAlphabet).toSet
-      val fsm = FSM(initialState, transitionsMatrix, acceptingStates, true, termsAlphabet, maxRegexLen, maxStarLen)
+      val fsm = FSM(resFsm(0)(0), resFsm(0)(1), resFsm(0)(2), true, termsAlphabet, maxRegexLen, maxStarLen)
       for (_ <- 0 until regexCount) {
         regexStrings = regexStrings :+ fsm.randomStringInLanguage()
       }

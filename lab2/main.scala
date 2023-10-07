@@ -448,7 +448,7 @@ object main{
       val p = PrintWriter(File("regex.txt"))
       regexStrings.foreach(p.println)
       p.close()
-    } else if (args.length == 3 && args(0) == "-w"){
+    } else if (args.length == 4 && args(0) == "-w"){
       val lines = fromFile("fsm.txt").getLines()
       var linesList: List[String] = List()
       for (line <- lines) {
@@ -457,11 +457,17 @@ object main{
       val (resFsm, resRegex) = this.parse(linesList)
       val maxWordsLen = args(1).toInt
       val lenOfTests = args(2).toInt
+      val useAdditionalAlphabet = args(3).toBoolean
       val lenOfInTests = lenOfTests/2
       val lenOfNotInTests = lenOfTests - lenOfInTests
       var fsms: List[FSM] = List()
+      val additionalAlphabet = Set("a", "b", "c", "d", "e")
       for (i <- resFsm) {
-        fsms = fsms :+ FSM(i(0), i(1), i(2), false, i(3), maxWordsLen)
+        if (useAdditionalAlphabet) {
+          fsms = fsms :+ FSM(i(0), i(1), i(2), false, i(3) ++ additionalAlphabet, maxWordsLen)
+        } else {
+          fsms = fsms :+ FSM(i(0), i(1), i(2), false, i(3), maxWordsLen)
+        }
       }
       var fail = false
       breakable{

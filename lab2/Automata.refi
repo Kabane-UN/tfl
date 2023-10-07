@@ -185,6 +185,18 @@ InsertNewTrans {
 
 CreateTransForPairs {
     (e.T) = ;
+    ((e.q1':'e.phi'>'e.q2) (e.q2':'e.psi'>'e.q1)) e.Pairs (e.T)
+    , e.phi <IFE (e.T) () () (e.T)'*'> : e.FT
+    , (e.FT) e.psi : {
+        (e.Some1 eps e.Some2) e.Some3 eps e.Some4 = e.Some1 e.Some2 e.Some3 e.Some4;
+        (e.Some1 eps e.Some2) e.Some3 = e.Some1 e.Some2 e.Some3;
+        (e.Some1) e.Some3 eps e.Some4 = e.Some1 e.Some3 e.Some4;
+        () e.Some = e.Some;
+        (e.Some) = e.Some;
+        (e.Some1) e.Some2 = e.Some1 e.Some2;
+    } : e.NT
+    = (e.q1':('e.NT')*>'e.q3)
+      <CreateTransForPairs e.Pairs (e.T)>;
 
     ((e.q1':'e.phi'>'e.q2) (e.q2':'e.psi'>'e.q3)) e.Pairs (e.T)
     , e.phi <IFE (e.T) () () (e.T)'*'> : e.FT
@@ -198,6 +210,7 @@ CreateTransForPairs {
     } : e.NT
     = (e.q1':'e.NT'>'e.q3)
       <CreateTransForPairs e.Pairs (e.T)>;
+
 }
 
 Filter {

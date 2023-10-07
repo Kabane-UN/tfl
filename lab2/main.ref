@@ -27,9 +27,12 @@ Parse {
     , <Automata-PrettyPrint t.Automata False> : e.Out'\n'
     , <Putout s.OutStream e.Out> :
 *    = ;
-    , <Automata-ToRegex t.Automata> : (e.s':'e.AcademicRegex'>'e.f)
+    , <Automata-ToRegex t.Automata> : {
+        (e.s':'(e.AcademicRegex)'>'e.f) = e.AcademicRegex;
+        (e.s':'e.AcademicRegex'>'e.f) = e.AcademicRegex;
+    } : e.AcademicRegex
     =
-*    e.AcademicRegex
+    e.AcademicRegex
       <Putout s.OutStream '#regex\n' <ReplaceEpsWithEmpty e.AcademicRegex>>
       <Close s.InStream>
       <Close s.OutStream>;

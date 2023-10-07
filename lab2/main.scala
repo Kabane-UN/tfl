@@ -396,6 +396,7 @@ object main{
         flag = "regex"
       } else {
         if (flag == "states"){
+          subRes = (0, Array(), Array(), Set())
           val n = line.toInt
           subRes = (subRes(0), Array.fill(n)(Array.fill(n)(List())), subRes(2), subRes(3))
         } else if (flag == "initial"){
@@ -465,39 +466,73 @@ object main{
       var fail = false
       breakable{
         for (i <- fsms.indices){
-          for (_ <- 0 until lenOfInTests){
-            val word = fsms(i).randomStringInLanguage()
-            if (!fsms(i).matches(word)){
-              println("FUZZ Test Error")
-              fail = true
-              break()
-            }
-            if (!resRegex(i).matches(word)){
-              println("FAIL")
-              println(s"In FSM №$i")
-              println(s"In word: $word")
-              println("Expected: match")
-              println("Got: don't match")
-              fail = true
-              break
+          breakable {
+            for (_ <- 0 until lenOfInTests) {
+              var word = ""
+              var gen = true
+              try {
+                word = fsms(i).randomStringInLanguage()
+              } catch {
+                case _: GenException =>
+                  gen = false
+                  println(s"Can't generate word in FSM №$i")
+                  println("Test skipped")
+                  break
+              }
+              if (gen) {
+                if (!fsms(i).matches(word)) {
+                  println("FUZZ Test Error")
+                  fail = true
+                  break
+                }
+                if (!resRegex(i).matches(word)) {
+                  println("FAIL")
+                  println(s"In FSM №$i")
+                  println(s"In word: $word")
+                  println("Expected: match")
+                  println("Got: don't match")
+                  fail = true
+                  break
+                }
+              }
             }
           }
-          for (_ <- 0 until lenOfNotInTests){
-            val word = fsms(i).randomStringNotInLanguage()
-            if (fsms(i).matches(word)) {
-              println("FUZZ Test Error")
-              fail = true
-              break()
+          if (fail){
+            break
+          }
+          breakable {
+            for (_ <- 0 until lenOfNotInTests) {
+              var word = ""
+              var gen = true
+              try {
+                word = fsms(i).randomStringNotInLanguage()
+              } catch {
+                case _: GenException =>
+                  gen = false
+                  println(s"Can't generate word not in FSM №$i")
+                  println("Test skipped")
+                  break
+              }
+              if (gen) {
+                if (fsms(i).matches(word)) {
+                  println("FUZZ Test Error")
+                  fail = true
+                  break
+                }
+                if (resRegex(i).matches(word)) {
+                  println("FAIL")
+                  println(s"In FSM №$i")
+                  println(s"In word: $word")
+                  println("Expected: don't match")
+                  println("Got: match")
+                  fail = true
+                  break
+                }
+              }
             }
-            if (resRegex(i).matches(word)){
-              println("FAIL")
-              println(s"In FSM №$i")
-              println(s"In word: $word")
-              println("Expected: don't match")
-              println("Got: match")
-              fail = true
-              break
-            }
+          }
+          if (fail){
+            break
           }
         }
       }

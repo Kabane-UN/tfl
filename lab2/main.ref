@@ -1,32 +1,43 @@
 $INCLUDE "Automata";
-
 $ENTRY Go {
-    = <Prout <Parse (1) 2>>;
-*     = <Prout
-*      <Normalize ('or '('rep b')' '('or a b'))>'\n'
-*     <Normalize ('or d '('or '('rep b')' '('or a b')))>>;
+    , <Open 'r' 1 <Arg 1>> :
+    , <Open 'w' 2 <Arg 2>> :
+    = <Solve (1) 2>;
+}
+
+Solve {
+    (s.InStream) s.OutStream
+    , <Dgall> : e.Trash
+    , <Get s.InStream> : {
+        0  =
+            <Close s.InStream>
+            <Close s.OutStream>
+            <Exit 0>;
+        e.Regex 0 =
+            <Parse e.Regex (s.OutStream)>
+            <Close s.InStream>
+            <Close s.OutStream>
+            <Exit 0>;
+        e.Regex =
+            <Parse e.Regex (s.OutStream)>
+            <Putout s.OutStream '-'>;
+
+    } : e.Regex
+    = <Solve (s.InStream) s.OutStream>;
 }
 
 Parse {
-    (s.InStream) s.OutStream
-    , <Open 'r' s.InStream <Arg 1>> :
-    , <Open 'w' s.OutStream <Arg 2>> :
-    , <Get s.InStream> : {e.Regex 0 = e.Regex; e.Regex = e.Regex;} : e.Regex
+    e.Regex (s.OutStream)
     , <Br 'Vars='> :
     , <Regex (() ()) e.Regex> : (Regex (e.Tree))
-    , <Prout e.Tree> :
-*    = ;
     , <Cp 'Vars'> : s.First e.Vars
     , <L e.Tree> : e.Accept
     , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
     , <Br 'Automata='t.Automata> :
     , <ComputeAllDeriv e.Tree> :
-*    = ;
     , <Cp 'Automata'> : t.Automata^
-*    , <Automata-PrettyPrint t.Automata> :
     , <Automata-PrettyPrint t.Automata False> : e.Out'\n'
     , <Putout s.OutStream e.Out> :
-*    = ;
     , <Automata-ToRegex t.Automata> : {
         (e.s':'(e.AcademicRegex)'>'e.f) = e.AcademicRegex;
         (e.s':'e.AcademicRegex'>'e.f) = e.AcademicRegex;
@@ -34,13 +45,13 @@ Parse {
     =
     e.AcademicRegex
       <Putout s.OutStream '#regex\n' <ReplaceEpsWithEmpty e.AcademicRegex>>
-      <Close s.InStream>
-      <Close s.OutStream>;
-*    = <Automata-PrettyPrint t.Automata>;
 }
 
 ReplaceEpsWithEmpty {
-    e.R-B eps e.R-E = <ReplaceEpsWithEmpty e.R-B e.R-E>;
+    e.S (e.SB eps e.SE) e.E = <ReplaceEpsWithEmpty e.S> (<ReplaceEpsWithEmpty e.SB> <ReplaceEpsWithEmpty e.SE>) <ReplaceEpsWithEmpty e.E>;
+    (e.Some) e.R = (<ReplaceEpsWithEmpty e.Some>) <ReplaceEpsWithEmpty e.R>;
+    e.B eps e.E = <ReplaceEpsWithEmpty e.B> <ReplaceEpsWithEmpty e.E>;
+    s.Char e.R = s.Char <ReplaceEpsWithEmpty e.R>;
     e.R = e.R;
 }
 
@@ -90,7 +101,6 @@ OrSimplify {
                 '1' = <Normalize ('or 'e.R2' 'e.R1)>;
             };
         };
-*        , <Prout e.R1 ' vs' e.R2> :
 
     };
 }
@@ -106,7 +116,6 @@ IsInOr {
 
 LexOrd {
     (e.R1) e.R2
-*    , <Prout (e.R1) e.R2> :
     , <TreeToStr e.R1> : e.R1^
     , <TreeToStr e.R2> : e.R2^
     , <Lenw e.R1> : s.L1 e.R1^
@@ -152,7 +161,6 @@ Factor {
     ((e.Scanned) (e.Tree)) ERR e.Msg = ((e.Scanned) (e.Tree)) ERR e.Msg;
 
     (() ()) (Base (e.Parsed)) e.Tokens
-    , <Prout tree ()' 'Parsed is' '(e.Parsed)' 'and tokens' 'e.Tokens> :
     , e.Tokens : {
         '*'e.Rest = <Factor (Base (('rep 'e.Parsed))) e.Rest>;
         '+'e.Rest = <Factor (Base (('con 'e.Parsed' '('rep 'e.Parsed)))) e.Rest>;
@@ -161,32 +169,31 @@ Factor {
     };
 
     (() (e.Tree)) (Base (e.Parsed)) e.Tokens
-    , <Prout tree (e.Tree)' 'Parsed is' '(e.Parsed)' 'and tokens' 'e.Tokens> :
     , e.Tokens : {
         '*'e.Rest
         , e.Tree : {
             ('sfl 'e.Arg)
-            , e.Arg : {
-                s.Char = <Factor (Base (('sfl 'e.Arg' '('rep 'e.Parsed)))) e.Rest>;
-                e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('rep 'e.Parsed)))) e.Rest>;
+            , <Lenw e.Arg> : {
+                1 e.Arg = <Factor (Base (('sfl 'e.Arg' '('rep 'e.Parsed)))) e.Rest>;
+                s.Len e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('rep 'e.Parsed)))) e.Rest>;
             };
             e.Some = <Factor (Base (('con 'e.Tree' '('rep 'e.Parsed)))) e.Rest>;
         };
         '+'e.Rest
          , e.Tree : {
              ('sfl 'e.Arg)
-             , e.Arg : {
-                s.Char = <Factor (Base (('sfl 'e.Arg' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
-                e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
+             , <Lenw e.Arg> : {
+                1 e.Arg = <Factor (Base (('sfl 'e.Arg' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
+                s.Len e.Expr = <Factor (Base (('con '('sfl 'e.Expr)' '('con 'e.Parsed' '('rep 'e.Parsed))))) e.Rest>;
              };
              e.Some = <Factor (Base (('con 'e.Tree' '('rep 'e.Parsed)))) e.Rest>;
          };
          '#'e.Rest
          , e.Tree : {
             ('sfl 'e.Arg)
-             , e.Arg : {
-                s.Char = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) '#'e.Rest>;
-                e.Expr = <Factor (Base (('sfl '('sfl 'e.Expr)' 'e.Parsed))) '#'e.Rest>;
+             , <Lenw e.Arg> : {
+                1 e.Arg = <Factor (Base (('sfl 'e.Arg' 'e.Parsed))) '#'e.Rest>;
+                s.Len e.Expr = <Factor (Base (('sfl '('sfl 'e.Expr)' 'e.Parsed))) '#'e.Rest>;
              };
              e.Some = <Factor (Base (('con 'e.Tree' 'e.Parsed))) '#'e.Rest>;
          };
@@ -207,7 +214,7 @@ Factor {
 
     (() (e.Tree)) e.Tokens = <Factor (() (e.Tree)) <Base (() (e.Tree)) e.Tokens>>;
 
-    (Base (e.Tree)) e.Tokens = <Prout end (e.Tree)> (Factor (e.Tree)) e.Tokens;
+    (Base (e.Tree)) e.Tokens = (Factor (e.Tree)) e.Tokens;
 }
 
 Base {
@@ -226,7 +233,7 @@ Base {
     (() (e.Tree)) s.Char e.Tokens = <Base (s.Char (e.Tree)) e.Tokens>;
     ('*' (e.Tree)) e.Tokens = (Base ('*')) e.Tokens;
     ('+' (e.Tree)) e.Tokens = (Base ('+')) e.Tokens;
-    ('#' (e.Tree)) e.Tokens = (Base ('#')) e.Tokens;
+    ('#' (e.Tree)) e.Tokens = (Base ()) '#'e.Tokens;
 
     (s.Char (e.Tree)) e.Tokens
     , <IsAlpha s.Char> : {
@@ -293,14 +300,15 @@ Derivate {
     (s.Char) ('con 'e.R1' 'e.R2)
     , <GetArguments ('con 'e.R1' 'e.R2)> : (e.R1^) e.R2^
     , <L e.R1> : {
-        True = <OrSimplify
-                    (<ConcatSimplify
-                        (<Derivate (s.Char) e.R1>)
-                        e.R2>)
-                    <Derivate (s.Char) e.R2>>;
-        False = <ConcatSimplify
+        True =
+        <OrSimplify
+                (<ConcatSimplify
                     (<Derivate (s.Char) e.R1>)
-                    e.R2>;
+                    e.R2>)
+                <Derivate (s.Char) e.R2>>;
+        False = <ConcatSimplify
+                (<Derivate (s.Char) e.R1>)
+                e.R2>;
     };
     (s.Char) ('or 'e.R1' 'e.R2)
     , <GetArguments ('or 'e.R1' 'e.R2)> : (e.R1^) e.R2^
@@ -328,10 +336,7 @@ Memoized-Derivate {
 
 ComputeAllDeriv {
     e.Expr
-*    , <Prout before e.Expr'\n'> :
     , <DeleteDup e.Expr> : e.Expr^
-*    , <Prout after e.Expr'\n'<TreeToStr e.Expr>'\n'> :
-
     , <Cp 'Vars'> : e.Vars = <DerivForAll e.Vars (e.Expr)>;
 }
 
@@ -348,7 +353,6 @@ FindSame {
 DeleteDup {
     ('or 'e.Args)
     , <GetArguments ('or 'e.Args)> : (e.A1) e.A2
-*    , <Prout (e.A1) e.A2> :
     , <FindSame (e.A1) e.A2> : {
         True = <DeleteDup e.A1>;
         False = ('or '<DeleteDup e.A1>' 'e.A2);
@@ -368,7 +372,6 @@ ComputeDeriv {
         True e.Deriv = ;
         False e.Deriv
         , <L e.Deriv> : e.Accept
-*        , <Prout e.Deriv FOR e.Expr'\n'> :
         , <DeleteDup e.Deriv> : {
             empty = ;
             e.Expr

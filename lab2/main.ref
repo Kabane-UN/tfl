@@ -3,6 +3,7 @@ $ENTRY Go {
     , <Open 'r' 1 <Arg 1>> :
     , <Open 'w' 2 <Arg 2>> :
     = <Solve (1) 2>;
+*    = <Derivate ('c') ('sfl '('con '('rep b')' '('rep c'))' '('con '('con '('rep c')' c')' c'))>;
 }
 
 Solve {
@@ -30,7 +31,8 @@ Parse {
     e.Regex (s.OutStream)
     , <Br 'Vars='> :
     , <Regex (() ()) e.Regex> : (Regex (e.Tree))
-    , <Prout e.Tree> :
+    , <DeleteDup e.Tree> : e.Tree^
+*    , <Prout e.Tree> :
     , <Cp 'Vars'> : s.First e.Vars
     , <L e.Tree> : e.Accept
     , <Automata-Create (s.First e.Vars) (e.Tree) e.Accept> : t.Automata
@@ -105,7 +107,7 @@ Factor {
     };
 
     (() (e.Tree)) (Base (e.Parsed)) e.Tokens
-    , <Prout Tree (e.Tree)' parsed '(e.Parsed)' tokens 'e.Tokens> :
+*    , <Prout Tree (e.Tree)' parsed '(e.Parsed)' tokens 'e.Tokens> :
     , e.Tokens : {
         '*'e.Rest
         , e.Tree : {
@@ -200,19 +202,11 @@ OrSimplify {
     (eps) e.R = <Normalize ('or 'eps' 'e.R)>;
     (e.R) eps = <Normalize ('or 'eps' 'e.R)>;
     (e.R1) e.R2
-    , <IsInOr (e.R1) e.R2> : {
-        True = e.R2;
-        False
-        , <IsInOr (e.R2) e.R1> : {
-            True = e.R1;
-            False
-            , <LexOrd (e.R1) e.R2> : {
-                '0' = <Normalize ('or 'e.R1' 'e.R2)>;
-                '1' = <Normalize ('or 'e.R2' 'e.R1)>;
-            };
-        };
-
+    , <LexOrd (e.R1) e.R2> : {
+        '0' = <Normalize ('or 'e.R1' 'e.R2)>;
+        '1' = <Normalize ('or 'e.R2' 'e.R1)>;
     };
+
 }
 
 IsInOr {
@@ -244,6 +238,9 @@ LexOrd {
 CmpStr {
     () /*empty*/ = '0';
     (s.C1 e.S1) s.C2 e.S2
+
+    , s.C1 : {eps = '$';s.NE = s.NE;} : s.C1^
+    , s.C2 : {eps = '$';s.NE = s.NE;} : s.C2^
     , <Compare <Ord s.C1> <Ord s.C2>> : {
           '-' = '-1';
           '+' = '1';
@@ -375,11 +372,13 @@ DerivForAll {
 
 ComputeDeriv {
     s.Char (e.Expr)
+*    , <Prout (s.Char)' by 'e.Expr>:
     , <Cp 'Automata'> : t.Automata
     , <Memoized-Derivate (s.Char) e.Expr> : {
         True e.Deriv = ;
         False e.Deriv
         , <L e.Deriv> : e.Accept
+*        , <Prout (s.Char)' by 'e.Expr' is 'e.Deriv' with 'e.Accept> :
         , <DeleteDup e.Deriv> : {
             empty = ;
             e.Expr

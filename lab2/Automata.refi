@@ -39,13 +39,14 @@ $ENTRY Automata-Insert {
     e.To> : {
         True e.ToPos
         =
-            [Automata
+        [Automata
             (e.Num MaxPos)
             (e.Vars Alphabet)
             (e.AcList Accepting)
             (e.Transitions
                 <Automata-AddTransition
-                    [Automata (e.Num MaxPos) (e.Vars Alphabet) (e.AcList Accepting) (e.Transitions Transitions) (e.States States)]
+                    [Automata (e.Num MaxPos) (e.Vars Alphabet) (e.AcList Accepting) 
+                    (e.Transitions Transitions) (e.States States)]
                     e.FromPos':'s.Key'>'e.ToPos>
             Transitions)
             (e.States States)];
@@ -59,7 +60,8 @@ $ENTRY Automata-Insert {
             (e.AcList <IFE (e.Accepting) (True) ((e.ToPos))> Accepting)
             (e.Transitions
                 <Automata-AddTransition
-                    [Automata (e.Num MaxPos) (e.Vars Alphabet) (e.AcList Accepting) (e.Transitions Transitions) (e.States States)]
+                    [Automata (e.Num MaxPos) (e.Vars Alphabet) (e.AcList Accepting) 
+                    (e.Transitions Transitions) (e.States States)]
                     e.FromPos':'s.Key'>'<Symb e.ToPos>>
             Transitions)
             (e.States (<Symb e.ToPos> (e.To)) States)];
@@ -124,25 +126,13 @@ $ENTRY Automata-ExcludeStates {
     = <Automata-ExcludeStates_ [Automata e.Prop] 1>;
 }
 
-FindAllLoops {
-    (e.Tr-B (e.To':'e.T'>'e.To) e.Tr-E) e.To
-    = e.T'|'<FindAllLoops (e.Tr-E) e.To>;
-    (e.NoTo) e.To = ;
-
-}
-
 $ENTRY Automata-DeleteState {
     [Automata e.Prop-B (e.Transitions Transitions) e.Prop-E]
     e.To
-    , e.Transitions : {
-        e.Tr-B (e.To':'e.T'>'e.To) e.Tr-E = e.T;
-        e.NoCicle = ;
-        }
-    : e.T
     , <FindAllLoops (e.Transitions) e.To> : {
         e.t'|' = e.t;
         e.E = e.E;
-    } : e.T^
+    } : e.T
     , <FindTrans e.Transitions (e.To)> : e.Trans
     , <Set <GetAllPairs e.Trans (e.Trans)>> : e.AllPairs
     , <CreateTransForPairs e.AllPairs (e.T)> : e.NewTrans
@@ -150,6 +140,12 @@ $ENTRY Automata-DeleteState {
     , <RemoveTrans e.Transitions (e.To)> : e.Transitions^
     =
     [Automata e.Prop-B (e.Transitions Transitions) e.Prop-E];
+}
+
+FindAllLoops {
+    (e.Tr-B (e.To':'e.T'>'e.To) e.Tr-E) e.To
+    = e.T'|'<FindAllLoops (e.Tr-E) e.To>;
+    (e.NoTo) e.To = ;
 }
 
 RemoveTrans {
@@ -207,12 +203,6 @@ CreateTransForPairs {
 
 }
 
-Filter {
-    (e.To) = ;
-    ((e.To e.Some1) (e.Some2))e.Pairs (e.To) = <Filter e.Pairs (e.To)>;
-    (e.SomePair) e.Pairs (e.To) = (e.SomePair) <Filter e.Pairs (e.To)>;
-}
-
 Set {
     = ;
     (e.R) e.B (e.R) e.E = (e.R) <Set e.B e.E>;
@@ -241,6 +231,7 @@ FindTrans {
     (e.Some':'e.T'>'e.To) e.Transitions (e.To) = (e.Some':'e.T'>'e.To) <FindTrans e.Transitions (e.To)>;
     (e.Some) e.Transitions (e.To) = <FindTrans e.Transitions (e.To)>;
 }
+
 IFE {
     () () (e.Res1) e.Res2 = e.Res1;
     (e.Cond) () (e.Res1) e.Res2 = e.Res2;

@@ -1,0 +1,1 @@
+println(occursin(r"^(a*)(b*)c+\2\1$", ARGS[1]))

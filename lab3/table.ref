@@ -2,6 +2,9 @@ $INCLUDE "LibraryEx";
 $ENUM Table;
 $ENUM ExdTable;
 
+* Несмотря на название ExdTable - расширенная все таки !вторая таблица!, из двух
+* содержащихся в ExdTable. Первую называю обычной.
+
 Oracle-MEMBER {
     eps = 1;
     '1100' = 1;
@@ -12,6 +15,11 @@ Oracle-MEMBER {
     e.W = 0;
 }
 
+/* Создание таблицы
+   <- алфавит
+   -> структура [ExdTable [Table1] [Table2]]
+   Таблицы хранятся так: [T (префиксы) (суффиксы) (пары "префикс-суффикс-принадлежность")]
+*/
 
 $ENTRY ExdTable-Create {
     e.Alphabet
@@ -25,6 +33,9 @@ $ENTRY ExdTable-Create {
         ((eps))
         (e.V)]];
 }
+
+/* Функция для красивого вывода таблицы
+*/
 
 $ENTRY ExdTable-Print {
     [ExdTable t.T1 t.T2]
@@ -46,6 +57,16 @@ PrintLoop {
 
 }
 
+/* GetRow
+    <- (префикс), (суффиксы), пары [т.е где искать],
+        разделитель [чтобы не писать две версии для
+        основной программы и функции вывода]
+    -> строка данного префикса
+
+   GetRowEnum - аналогична GetRow, но:
+    -> (префикс (строка префикса))
+*/
+
 GetRow {
     (e.S) ((e.E) e.E-E) e.V-B (e.S' 'e.E' 'e.V) e.V-E (e.del)
     = e.V e.del <GetRow (e.S) (e.E-E) e.V-B e.V-E (e.del)>;
@@ -62,6 +83,16 @@ GetRowEnum {
     (e.S) (e.Else) e.Some =;
 }
 
+/* Table-Update - функция обновления таблицы 2 при добавлении нового суффикса.
+    <- (префиксы таблицы 1). Используется в AddSymb, чтобы исключить ситуации
+        дублирование префиксов в таблицах.
+    <- [таблица 2].
+    <- добавляемый префикс. Если он уже есть в расширенной таблице - выкидываем.
+       Получаем все префиксы с добавленной буквой из алфавита. Формируем новые
+       строки для них.
+    -> обновленная таблица 2.
+*/
+
 $ENTRY Table-Update {
     (e.S)
     [Table (e.SS) (e.E) (e.V)] e.CrEx
@@ -77,6 +108,19 @@ $ENTRY Table-Update {
     = [Table (e.SS e.NewP) (e.E) (<DeleteRow (e.CrEx) e.V> e.NewRows)];
 }
 
+/* DeleteRow - удаляет пары с заданным префиксом
+    <- префикс.
+    <- пары.
+    -> оставшиеся пары с отличным префиксом.
+
+   AddSymb - добавляет буквы алфавита к префиксу
+    <- (исключаемые префиксы). Если получили префикс отсюда -
+        не возвращаем его.
+    <- (префикс).
+    <- алфавит.
+    -> префиксы с добавленными буквами.
+*/
+
 DeleteRow {
     (e.S) (e.S' 'e.Col) e.V = <DeleteRow (e.S) e.V>;
     (e.S) e.V = e.V;
@@ -91,6 +135,19 @@ AddSymb {
     };
 
 }
+
+/* ExdTable-Insrt - вставка в 3 режимах:
+    1) вызов в связи с нарушением полноты. Высчитывается новая строка,
+       добавляется в таблицу, расширенная обновляется.
+    2) вызов в связи с нарушением непротиворечивости. Добавляется
+       суффикс. В обеих таблицах достраивается новый столбец.
+    3) вызов в связи с нахождением контрпримера. Строятся все префиксы
+       контрпримера. Каждый добавляется в режиме (1).
+    <- [ExdTable].
+    <- (режим)
+    <- добавляемое слово.
+    -> [ExdTable] со вставленным словом.
+*/
 
 $ENTRY ExdTable-Insert {
     [ExdTable [Table (e.S-B (e.Prefix) e.S-E) (e.E) (e.V1)] t.T]
@@ -110,16 +167,41 @@ $ENTRY ExdTable-Insert {
     , <GetNewColumn (e.SS) e.Suf (e.V1 e.V2)> : e.V2^
     = [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ];
 
-
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
     (counter) e.W
     , <GetAllPrefixes e.W (1)> : e.Prefs
-*    , <Prout all prefs e.Prefs> :
-*   for all pref in prefs exd-insert pref (notclosed) gute?
     = <InsertAllPrefixes
         [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
         e.Prefs>;
 }
+
+/* GetNewColumn - строит новый столбец. К каждому префиксу приписывает суффикс и добавляет
+    во множество пар. Если после приписывания получили какой - то префикс, оракул не
+    вызывается, берется посчитанный результат.
+    <- (префиксы).
+    <- суффикс.
+    <- пары.
+    -> пары с добавленным суффиксом.
+
+   FindInTable - ищет данное слово в парах.
+    <- (префикс).
+    <- пары.
+    -> True принадлежность | False.
+
+   InsertAllPrefixes - вызывает вставку для каждого префикса из данного набора.
+    <- [ExdTable].
+    <- префиксы.
+    -> [ExdTable] после всех вставок.
+
+   GetAllPrefixes - находит все префиксы слова.
+    <- слово.
+    -> оно же и все его префиксы.
+
+   ComputeRow - вычисляет строку для префикса.
+    <- (префикс).
+    <- суффиксы.
+    -> вычисленная строка.
+*/
 
 GetNewColumn {
     ((e.S)e.S-E) e.Suf (e.V)
@@ -132,9 +214,9 @@ GetNewColumn {
 }
 
 FindInTable {
-    (e.S s.Suf) e.V-B (e.S s.Suf' 'e.Suf2' 'e.M) e.V-E
+    (e.S) e.V-B (e.S' 'e.Suf2' 'e.M) e.V-E
     = True e.M;
-    (e.S s.Suf) e.V
+    (e.S) e.V
     = False;
 }
 
@@ -152,7 +234,6 @@ GetAllPrefixes {
     s.a (0) = ; /*уже включен предыдущем вызовом*/
     e.W s.a (1) = (e.W s.a) <GetAllPrefixes e.W s.a (0)>;
     e.W s.a (0) = (e.W) <GetAllPrefixes e.W (0)>;
-
 }
 
 ComputeRow {
@@ -165,11 +246,33 @@ ComputeRow {
     = (e.Prefix' 'e.Suffix' '<Oracle-MEMBER e.Prefix e.Suffix>)<ComputeRow (e.Prefix) e.E>;
 }
 
+/* ExdTable-IsClosed - проверяет свойство полноты (см слайды).
+    <- [ExdTable].
+    -> True [ExdTable] | False [ExdTable] после добавления префикса.
+
+   CompareRows - сравнивает строки обычной и расширенной таблицы.
+    <- (строки обычной таблицы).
+    <- (строки расширенной).
+    -> True | False различающийся префикс.
+
+   GetRows - формирует строку из уже посчитанных пар.
+    <- (префиксы).
+    <- (суффиксы).
+    <- пары.
+    -> все строки данной таблицы.
+
+   GetRowsEnum - аналогично GetRows, но дополнительно
+    возвращает префикс строки.
+    <- (префиксы).
+    <- (суффиксы).
+    <- пары.
+    -> все (префикс (строка)) из данной таблицы.
+*/
+
 $ENTRY ExdTable-IsClosed {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
     , <GetAllRowsEnum (e.S) (e.E) e.V1 ()> : e.Rows1
     , <GetAllRowsEnum (e.SS) (e.E) e.V2 ()> : e.Rows2
-*    , <Prout e.Rows1' 'e.Rows2> :
     , <CompareRows (e.Rows1) (e.Rows2)> : {
         True = True [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]];
         e.Pref = False <ExdTable-Insert [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
@@ -194,6 +297,7 @@ GetAllRows {
     (e.S) (e.E) e.V
     = (<GetRow (e.S) (e.E) e.V ()>);
 }
+
 GetAllRowsEnum {
     ((e.S) e.S-E) (e.E) e.V
     = (e.S (<GetRow (e.S) (e.E) e.V ()>))<GetAllRowsEnum (e.S-E) (e.E) e.V>;
@@ -202,11 +306,69 @@ GetAllRowsEnum {
     (e.S) (e.E) e.V
     = (e.S (<GetRow (e.S) (e.E) e.V ()>));
 }
+/* ExdTable-ToDFA - строит ДКА по таблице (см слайды).
+    <- [ExdTable];
+    -> ДКА.
 
-CompareItems {
-    (e.S1' 'e.E1' 's.V) e.S2' 'e.E2' 's.V = True;
-    (e.S1' 'e.E1' 's.V1) e.S2' 'e.E2' 's.V2 = False;
-}
+   DecodeState - На текущий момент состояния - строки таблицы
+    (в свою очередь однозначно соответствующие своим префиксам).
+    С помощью "словаря" переводит строки в номер состояния.
+    <- состояние.
+    <- ("словарь").
+    -> номер состояния.
+
+   DecodeTrans - аналог DecodeState для переходов.
+    <- переход.
+    <- ("словарь").
+    -> переход с номерами состояний.
+
+   DFANF - выводит ДКА в стандартном формате.
+    <- "словарь".
+    <- (начальные состояния).
+    <- (конечные состояния).
+    <- переходы.
+    -> запись ДКА.
+
+   GetTransitions - находит все переходы (см слайды).
+    <- (состояния).
+    <- строки обеих таблиц.
+    -> переходы.
+
+   FindNgbrs - находит переходы для конкретного состояния.
+    <- (состояние).
+    <- алфавит.
+    <- (строки).
+    -> переходы из данного состояния.
+
+   ExdView2 - 2, потому что ниже будет то же самое, но с другим
+    синтаксисом. Добавляет букву к слову и нужно, только чтобы
+    обрабатывать случаи конкатенации с eps.
+    <- слово.
+    <- буква.
+    -> конкатенция аргументов.
+
+   SmallestUniq - находит кратчайшие префиксы, различающие строки (см слайды).
+    Если найдены два префикса с одинаковыми строками, из результата исключается
+    самый длинный.
+    <- строки таблицы 1.
+    -> состояния ДКА.
+
+   Shorter - сравнивает строки на длину.
+    <- (строка 1).
+    <- строка 2.
+    -> i - iая строка короче, 0 - равная длина.
+
+   GetSDict - считает вышеупомянутый словарь.
+    <- состояния.
+    <- (начальный индекс).
+    -> словарь.
+
+   DivideStates - делит состояния на начальные и финальные (см слайды).
+    <- состояния.
+    <- (множество начальных состояний).
+    <- (множество конечных состояний).
+    -> (начальные состояния)конечные состояния.
+*/
 
 $ENTRY ExdTable-ToDFA {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
@@ -251,7 +413,6 @@ DFANF {
       } e.Trans>
 }
 
-
 GetTransitions {
     (/*empty*/) e.Rows = ;
     ((e.S) e.S-E) e.Rows
@@ -268,6 +429,7 @@ FindNgbrs {
     };
     (e.S) /*empty*/ (e.Rows) = ;
 }
+
 ExdView2 {
     eps s.C = s.C;
     e.W s.C = e.W s.C;
@@ -275,7 +437,7 @@ ExdView2 {
 
 SmallestUniq {
     e.R1-B (e.S1 (e.Row1)) e.R1-E e.R2-B (e.S2 (e.Row1)) e.R2-E
-    , <Prout found' '(e.S2 (e.Row1))' 'like' '(e.S1 (e.Row1))> :
+*    , <Prout found' '(e.S2 (e.Row1))' 'like' '(e.S1 (e.Row1))> :
     , <Shorter (e.S1) e.S2> : {
         2 = <SmallestUniq e.R1-B e.R1-E e.R2-B (e.S2 (e.Row1)) e.R2-E>;
         e.NoMatter = <SmallestUniq e.R1-B (e.S1 (e.Row1)) e.R1-E e.R2-B e.R2-E>;
@@ -304,15 +466,24 @@ DivideStates {
     /*empty*/ (e.Init) (e.F) = (e.Init) e.F;
 }
 
+/* ExdTable-IsConsist - проверяет условие непротиворечивости (см слайды). Реализована
+    через три функции - по факту просто реализация двойного цикла.
+        for row in rows:
+            for next(row) in rows:
+                if row == next(row):
+                    for char in alphabet:
+
+
+    <- [ExdTable].
+    -> True [ExdTable] | False [ExdTable] после вставки суффикса.
+
 $ENTRY ExdTable-IsConsist {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
     , <GetAllRowsEnum (e.S) (e.E) e.V1> <GetAllRowsEnum (e.SS) (e.E) e.V2>: e.Rows
-*    , <Prout All e.Rows> :
     , <OutLoopC e.Rows (e.E) (e.V1 e.V2)> : {
         True = True [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]];
         (e.S1 (e.Row1))(e.S2 (e.Row2))
         , <Common (e.S1) e.S2> : e.Common
-*        , <Prout (e.S1) (e.S2)> :
         = e.Common;
     } : e.Suf
     = False
@@ -338,7 +509,6 @@ InLoopC {
     (e.Row1) /*empty*/ (e.E) (e.V2)
     = True;
     (e.S1 (e.Row1)) (e.S2 (e.Row1)) e.Rows (e.E) (e.V2)
-*    , <Prout e.S1 same e.S2> :
     = <AbtLoopC (e.S1 (e.Row1)) (e.S2 (e.Row1)) (e.Rows) <Cp 'Abt'> (e.E) (e.V2)>;
     (e.S1 (e.Row1)) (e.S2 (e.Row2)) e.Rows (e.E) (e.V2)
     = <InLoopC (e.S1 (e.Row1)) e.Rows (e.E) (e.V2)>;
@@ -377,18 +547,18 @@ GetE {
 
 $ENTRY Go {
 *    , <ExdTable-Create '01'> : t.ExdTable
-**    , <ExdTable-Print t.ExdTable> :
-**    , <Prout>:
+*    , <ExdTable-Print t.ExdTable> :
+*    , <Prout>:
 *    , <ExdTable-IsClosed t.ExdTable> : e.Status t.ExdTable^
-**    , <Prout e.Status> :
-**    , <ExdTable-Print t.ExdTable> :
+*    , <Prout e.Status> :
+*    , <ExdTable-Print t.ExdTable> :
 *    , <Prout>:
 *    , <ExdTable-Insert t.ExdTable (counter) '11'> : t.ExdTable^
-**    , <Prout t.ExdTable> :
-**    , <ExdTable-Print t.ExdTable> :
-**    , <ExdTable-Print t.ExdTable> :
+*    , <Prout t.ExdTable> :
+*    , <ExdTable-Print t.ExdTable> :
+*    , <ExdTable-Print t.ExdTable> :
 *    , <ExdTable-IsConsist t.ExdTable> : e.Status^ t.ExdTable^
-**    , <ExdTable-Print t.ExdTable> :
+*    , <ExdTable-Print t.ExdTable> :
 *    , <ExdTable-Insert t.ExdTable (counter) '011'> : t.ExdTable^
 *    , <ExdTable-Print t.ExdTable> :
 *    , <ExdTable-ToDFA t.ExdTable> :

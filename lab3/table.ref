@@ -378,11 +378,11 @@ $ENTRY ExdTable-ToDFA {
     , <SmallestUniq e.T1Rows> : e.States
     , <Prout uniq rows' 'e.States> :
     , <GetSDict e.States (0)> : e.StatesEnum
-    , <DivideStates e.States () ()> : (e.Init)e.F
+    , <DivideStates e.States> : e.F
     , <GetTransitions (e.States) e.T1Rows e.T2Rows> : e.Trans
     , <Prout Finals' 'e.F'\n'All' 'e.StatesEnum'\n'Transitions' 'e.Trans> :
 
-    , <DFANF (e.StatesEnum) (e.Init) (e.F) e.Trans> : e.DFA
+    , <DFANF (e.StatesEnum) (e.F) e.Trans> : e.DFA
     = e.DFA;
 }
 
@@ -399,16 +399,14 @@ DecodeTrans {
 }
 
 DFANF {
-    (e.States (e.S (e.Row)(e.Max))) (e.Init) (e.F) e.Trans
-    = '#states\n'e.Max
-      '\ninitial\n'<Map {
-        (e.State) = <DecodeState e.State (e.States (e.S (e.Row)(e.Max)))>'\n'
-      } e.Init>
-      'accepting\n'<Map {
+    (e.States (e.S (e.Row)(e.Max))) (e.F) e.Trans
+    = '#states\n'<Inc e.Max>
+      '\n#initial\n'0
+      '\n#accepting\n'<Map {
         (e.State) = <DecodeState e.State (e.States (e.S (e.Row)(e.Max)))>'\n'
       } e.F>
-      'alphabet\n'<Map {s.c = s.c'\n'} <Cp 'Abt'>>
-      'transitions\n'<Map {
+      '#alphabet\n'<Map {s.c = s.c'\n'} <Cp 'Abt'>>
+      '#transitions\n'<Map {
         (e.T) = <DecodeTrans e.T (e.States (e.S (e.Row)(e.Max)))>'\n'
       } e.Trans>
 }
@@ -461,21 +459,50 @@ GetSDict {
 
 DivideStates {
     /* здесь 1 стоит заменить на '1' наверно*/
-    (e.S (1 e.Rest)) e.S-E (e.Init) (e.F)= <DivideStates e.S-E (e.Init) (e.F (e.S))>;
-    (e.S (0 e.Rest)) e.S-E (e.Init) (e.F) = <DivideStates e.S-E (e.Init (e.S)) (e.F)>;
-    /*empty*/ (e.Init) (e.F) = (e.Init) e.F;
+    (e.S (1 e.Rest)) e.S-E = (e.S) <DivideStates e.S-E>;
+    (e.S (0 e.Rest)) e.S-E = <DivideStates e.S-E>;
+    /*empty*/  = ;
 }
 
 /* ExdTable-IsConsist - проверяет условие непротиворечивости (см слайды). Реализована
-    через три функции - по факту просто реализация двойного цикла.
-        for row in rows:
-            for next(row) in rows:
-                if row == next(row):
-                    for char in alphabet:
-
-
+    через три функции - по факту просто реализация тройного цикла.
+        for s, row in rows:
+         for ss, next(row) in rows:
+          if row == next(row):
+           for char in alphabet:
+            if row(s+y) != row(ss+y):
+             return s, ss.               Хотя конечно достаточно вернуть один пример.
     <- [ExdTable].
     -> True [ExdTable] | False [ExdTable] после вставки суффикса.
+
+   Common - ищет общий суффикс в словах: вида [слово1] буква1 суффикс1, [слово2] буква1 суффикс1.
+    <- (слово1).
+    <- слово2.
+    -> общий суффикс.
+
+   OutLoopC - внешний for цикл.
+    <- (строки).
+    <- (суффиксы).
+    <- пары.
+    -> True | расходящиеся строки.
+
+   InLoopC - внутренний for цикл.
+    <- (строки).
+    <- (суффиксы).
+    <- пары.
+    -> True.
+
+   AbtLoopC - цикл по буквам алфавита.
+    <- (строки).
+    <- (пары).
+    <- (суффиксы).
+    <- алфавит.
+    -> True | расходящиеся строки.
+
+   ExdView - см ExdView2.
+    <- строка с префиксом.
+    -> префикс с добавленной буквой.
+*/
 
 $ENTRY ExdTable-IsConsist {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
@@ -535,14 +562,6 @@ AbtLoopC {
 ExdView {
     eps (e.Row) s.s = s.s;
     e.S (e.Row) s.s = e.S s.s;
-}
-
-GetS {
-    e.S' 'e.E' 's.V = e.S;
-}
-
-GetE {
-    e.S' 'e.E' 's.V = e.E;
 }
 
 $ENTRY Go {

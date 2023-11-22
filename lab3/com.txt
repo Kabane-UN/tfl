@@ -1,0 +1,16 @@
+#oracle
+oracle.jl
+#for
+i
+#const
+10
+10
+10
+#alphabet
+cba
+#split
+a
+b
+c
+b
+a

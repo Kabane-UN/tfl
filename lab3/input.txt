@@ -1,0 +1,16 @@
+#oracle
+^(a*)(b*)c+\2\1$
+#const
+10
+10
+10
+#alphabet
+a
+b
+c
+#split
+a
+b
+c
+b
+a

@@ -108,6 +108,9 @@ end
 
 function gen_random_word_in_language(fsm)
     word = ""
+    if isempty(fsm.accepting)
+        return false
+    end
     current_state = fsm.states[rand(fsm.accepting)]
     while true
         if current_state.is_initial == true

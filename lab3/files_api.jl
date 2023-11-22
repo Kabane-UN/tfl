@@ -59,6 +59,6 @@ function parse_inputs(lines)
             end
         end
     end
-    return oracle, C, P, P1, alphabet, split, for_part
+    return oracle, C, P, P1, alphabet, word, for_part
 end
 end

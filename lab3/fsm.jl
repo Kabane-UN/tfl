@@ -125,7 +125,11 @@ function gen_random_word_in_language(fsm)
             word *= by_term
             current_state = fsm.states[from_state]
         else
-            return false
+            if current_state.is_initial
+                break
+            else
+                return false
+            end
         end
     end
     return reverse(word)
@@ -150,7 +154,11 @@ function gen_random_word_not_in_language(fsm)
             word *= by_term
             current_state = fsm.states[from_state]
         else 
-            return false
+            if current_state.is_initial
+                break
+            else
+                return false
+            end
         end
     end
     return reverse(word)

@@ -2,9 +2,9 @@
 $EXTERN Inc;
 
 $ENTRY Oracle-Get {
-    e.Path (p) = <Br 'Path='e.Path><Br 'Type=p'>;
-    e.Path (s) = <Br 'Path='e.Path><Br 'Type=s'>;
-    e.Path (i) = <Br 'Path='e.Path><Br 'Type=i'>;
+    e.Path (e.PP) (p) = <Br 'Path='e.Path><Br 'Type=p'><Br 'PP='e.PP>;
+    e.Path (e.PP) (s) = <Br 'Path='e.Path><Br 'Type=s'><Br 'PP='e.PP>;
+    e.Path (e.PP) (i) = <Br 'Path='e.Path><Br 'Type=i'><Br 'PP='e.PP>;
 }
 
 $ENTRY Oracle-SetSuf {
@@ -34,6 +34,7 @@ RepMember {
 *    <Prout TRUE> 1;
 
     ('p') (e.i) (e.N) e.w
+*    , <Prout e.i (e.N)> :
     , <Cp 'u'> : (e.w2)(e.w3)(e.w4)(e.w5)
     , <Dup (0) (e.i) e.w2>e.w3<Dup (0) (e.i) e.w4>e.w5 : e.u
 *    , <Prout CHECKING e.w'-'e.u> :
@@ -72,7 +73,7 @@ RepMember {
 }
 $ENTRY Oracle-MEMBER {
     e.w
-    = <RepMember (<Cp 'Type'>) (0) (3) e.w> <Close 2 >;
+    = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w> <Close 2 >;
 }
 
 $ENTRY Oracle-EQUIVALENCE {

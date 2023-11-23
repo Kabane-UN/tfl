@@ -2,9 +2,11 @@
 $EXTERN Map, Inc;
 *$FROM mySort
 $EXTERN Sort1;
-*$FROM Oracle
+*$FROM oracle
 $EXTERN Oracle-MEMBER, Oracle-EQUIVALENCE, Oracle-Get, Oracle-SetSuf,
 Oracle-SetPrf, Oracle-SetInf;
+*$FROM negoracle
+$EXTERN NOracle-MEMBER, NOracle-EQUIVALENCE, NOracle-Get;
 *$FROM table
 $EXTERN ExdTable-Create, ExdTable-Insert, ExdTable-IsClosed,
 ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
@@ -26,15 +28,32 @@ $ENTRY Go {
     , <Br 'P='e.P> :
     , <Br 'PP='e.PP> :
     , <Br 'S='e.S> :
-    = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> <Close 1> <Close 2> <Close 3>;
+    , e.Type : {
+        'n' = <LearnNeg e.S> <Close 1> <Close 2> <Close 3>;
+        e.Else = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> <Close 1> <Close 2> <Close 3>;
+    };
+}
 
+LearnNeg {
+    e.Abt
+    , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
+    , <NOracle-Get <Cp 'Path'>> :
+    , <LStarLoop t.ExdTable> : {
+        fail = fail;
+        t.T
+        , <ExdTable-Print t.T> :
+        , <Open 'w' 3 <Arg 2>> :
+        , <Putout 3 <ExdTable-ToDFA t.T>> :
+        , <Close 3> :
+        = success;
+    };
 }
 
 GetLang {
     'p' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
     , <Lenw e.w1> : s.w1l e.w1
     , <Br 'THold='<Add (s.w1l) <Numb <Cp 'C'>>>> :
-    , <Oracle-Get <Cp 'Path'> (p)> :
+    , <Oracle-Get <Cp 'Path'> (<Cp 'PP'>) (p)> :
     , <GetAlphabet e.w1 ()> : e.w1A
     , (e.w1A) <SubS e.w1A> : e.w1A^
     , <AbtLoop ('p') (<Cp 'PP'>) e.w1A (e.w2)(e.w3)(e.w4)(e.w5)> : {
@@ -46,7 +65,7 @@ GetLang {
     's' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
     , <Lenw e.w5> : s.w5l e.w5
     , <Br 'THold='<Add (s.w5l) <Numb <Cp 'C'>>>> :
-    , <Oracle-Get <Cp 'Path'> (s)> :
+    , <Oracle-Get <Cp 'Path'> (<Cp 'PP'>) (s)> :
     , <GetAlphabet e.w5 ()> : e.w5A
     , (e.w5A) <SubS e.w5A> : e.w5A^
     , <Close 1> :
@@ -59,7 +78,7 @@ GetLang {
     'i' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
     , <Lenw e.w3> : s.w3l e.w3
     , <Br 'THold='<Add (s.w3l) <Numb <Cp 'C'>>>> :
-    , <Oracle-Get <Cp 'Path'> (i)> :
+    , <Oracle-Get <Cp 'Path'> (<Cp 'PP'>) (i)> :
     , <GetAlphabet e.w3 ()> : e.w3A
     , (e.w3A) <SubS e.w3A> : e.w3A^
     , <Close 1> :
@@ -160,7 +179,7 @@ LearnI {
     };
 }
 
-$ENTRY LStarLoop {
+LStarLoop {
     t.ExdTable
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
@@ -175,9 +194,24 @@ $ENTRY LStarLoop {
         };
         False = <LStarLoop t.ExdTable>;
     };
+
+    t.ExdTable (N)
+    , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
+    , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
+*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+*    , <ExdTable-Print t.ExdTable> :
+*    , <Prout <Dup (0) (5) '#'>> :
+    , e.ConS : {
+        True
+        , e.CloS : {
+            True = <LStarTest t.ExdTable (N)>;
+            False = <LStarLoop t.ExdTable (N)>;
+        };
+        False = <LStarLoop t.ExdTable (N)>;
+    };
 }
 
-$ENTRY LStarTest {
+LStarTest {
     t.ExdTable
     , <ExdTable-DFASize t.ExdTable> : e.Size (e.T1Rows) (e.States) e.StatesEnum
 *    , <Prout (e.Size) <Cp 'THold'> <Type e.Size> <Type <Cp 'THold'>> >:
@@ -197,7 +231,29 @@ $ENTRY LStarTest {
         };
         e.ge = fail;
 *         <Prout FAILED>fail;
-    }
+    };
+
+
+    t.ExdTable (N)
+    , <ExdTable-DFASize t.ExdTable> : e.Size (e.T1Rows) (e.States) e.StatesEnum
+*    , <Prout (e.Size) <Cp 'THold'> <Type e.Size> <Type <Cp 'THold'>> >:
+    , <Compare (e.Size) <Cp 'THold'>>: {
+        '-'
+        , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
+        , <Putout 3 e.DFA> :
+*        , <Prout 'BUILD AUTOMATA' e.DFA> :
+*        , <Close 3> :
+        , <NOracle-EQUIVALENCE (<Cp 'P'>) 10> : {
+            True = t.ExdTable;
+*            <Prout success> t.ExdTable;
+            False e.Counter (s.Actual) =
+*            <Prout INSERTING e.Counter' 'with (s.Actual)>
+             <LStarLoop
+                <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
+        };
+        e.ge = fail;
+*         <Prout FAILED>fail;
+    };
 }
 
 

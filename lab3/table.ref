@@ -1,4 +1,4 @@
-*$FROM Oracle
+*$FROM oracle
 $EXTERN Oracle-MEMBER, Oracle-Get, Oracle-SetSuf;
 
 $INCLUDE "LibraryEx";

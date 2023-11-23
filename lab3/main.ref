@@ -17,11 +17,11 @@ $ENTRY Go {
 
     , <ReadInput 1> :
         '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
-        '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5
+        '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
 
-*    , <Prout
-*              'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
-*              '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+    , <Prout
+              'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
+              '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
     , <Br 'Path='e.Path> :
     , <Br 'C='e.C> :
     , <Br 'P='e.P> :
@@ -267,9 +267,11 @@ SubSS {
     (s.a) /*empty*/ = (s.a);
 }
 
-$ENTRY ReadInput {
+ReadInput {
     s.Stream
     , <Get s.Stream> : {
+        0 = ;
+         = ' \n'<ReadInput s.Stream>;
         e.Line 0 = e.Line;
         e.Line = e.Line'\n'<ReadInput s.Stream>;
     };

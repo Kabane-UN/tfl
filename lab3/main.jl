@@ -28,7 +28,7 @@ function gen_instructions(oracle, C, P, P1, alphabet, word, for_part)
     for i in word
         res *= "$i\n"
     end
-    return replace(res, r"\n$" => "")
+    return res
 end
 function gen_com(oracle, for_part, C, P, P1, alphabet, word=C_NULL)
     res = "#oracle\n$oracle\n#for\n$for_part\n#const\n$C\n$P\n$P1\n#alphabet\n"
@@ -44,7 +44,7 @@ function gen_com(oracle, for_part, C, P, P1, alphabet, word=C_NULL)
             res *= "$i\n"
         end
     end
-    return replace(res, r"\n$" => "")
+    return res
 end
 function get_multy_transition(multy_transitions, from, by)
     for i in eachindex(multy_transitions)
@@ -454,7 +454,7 @@ function gen_result(fsm1, fsm2)
     end
 end
 macro run_l_star()
-    return :(Sys.iswindows() ? run(`table.exe`) : run(`./table`))
+    return :(Sys.iswindows() ? run(`main.exe ./com.txt ./com.txt`) : run(`./main ./com.txt ./com.txt`))
 end
 
 begin

@@ -11,7 +11,6 @@ $EXTERN NOracle-MEMBER, NOracle-EQUIVALENCE, NOracle-Get;
 $EXTERN ExdTable-Create, ExdTable-Insert, ExdTable-IsClosed,
 ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
 
-
 $ENTRY Go {
     , <Open 'r' 1 <Arg 1>> :
     , <Open 'w' 3 'fsm.txt'> :
@@ -38,10 +37,10 @@ LearnNeg {
     e.Abt
     , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
     , <NOracle-Get <Cp 'Path'>> :
-    , <LStarLoop t.ExdTable> : {
+    , <LStarLoop t.ExdTable (N)> : {
         fail = fail;
         t.T
-        , <ExdTable-Print t.T> :
+*        , <ExdTable-Print t.T> :
         , <Open 'w' 3 <Arg 2>> :
         , <Putout 3 <ExdTable-ToDFA t.T>> :
         , <Close 3> :
@@ -57,9 +56,9 @@ GetLang {
     , <GetAlphabet e.w1 ()> : e.w1A
     , (e.w1A) <SubS e.w1A> : e.w1A^
     , <AbtLoop ('p') (<Cp 'PP'>) e.w1A (e.w2)(e.w3)(e.w4)(e.w5)> : {
-        success = ;
-*        <Prout 'Language in com.txt'>;
-        /*empty*/ = ;
+        success =
+        <Prout 'Language in com.txt'>;
+        e.w = <Prout hz e.w>;
     };
 
     's' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
@@ -72,7 +71,7 @@ GetLang {
     , <AbtLoop ('s') (<Cp 'PP'>) e.w5A (e.w1)(e.w2)(e.w3)(e.w4)> : {
         success = ;
 *        <Prout 'Language in com.txt'>;
-        /*empty*/ = ;
+        e.w = <Prout hz e.w>;
     };
 
     'i' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
@@ -83,9 +82,10 @@ GetLang {
     , (e.w3A) <SubS e.w3A> : e.w3A^
     , <Close 1> :
     , <AbtLoop ('i') (<Cp 'PP'>) e.w3A (e.w1)(e.w2)(e.w4)(e.w5)> : {
-        success = ;
-*        <Prout 'Language in com.txt'>;
-        /*empty*/ = ;
+        success =
+        <Prout 'Language in com.txt'>;
+        e.w = <Prout hz e.w>;
+
     };
 
 
@@ -183,9 +183,9 @@ LStarLoop {
     t.ExdTable
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <Prout <Dup (0) (5) '#'>> :
+    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+    , <ExdTable-Print t.ExdTable> :
+    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {

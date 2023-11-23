@@ -1,0 +1,142 @@
+*$FROM LibraryEx
+$EXTERN Inc;
+
+$ENTRY Oracle-Get {
+    e.Path (p) = <Br 'Path='e.Path><Br 'Type=p'>;
+    e.Path (s) = <Br 'Path='e.Path><Br 'Type=s'>;
+    e.Path (i) = <Br 'Path='e.Path><Br 'Type=i'>;
+}
+
+$ENTRY Oracle-SetSuf {
+    e.u = <Br 'u='e.u>;
+}
+
+$ENTRY Oracle-SetPrf {
+    e.p = <Br 'p='e.p>;
+}
+
+$ENTRY Oracle-SetInf {
+    e.i = <Br 'i='e.i>;
+}
+
+Dup {
+    (e.i) (e.n)
+    = ;
+    (e.n) (e.n) e.w
+    = ;
+    (e.i) (e.n) e.w
+    = e.w <Dup (<Inc e.i>) (e.n) e.w>;
+}
+
+RepMember {
+    (s.Any) (e.N) (e.N) e.w
+    = 1;
+*    <Prout TRUE> 1;
+
+    ('p') (e.i) (e.N) e.w
+    , <Cp 'u'> : (e.w2)(e.w3)(e.w4)(e.w5)
+    , <Dup (0) (e.i) e.w2>e.w3<Dup (0) (e.i) e.w4>e.w5 : e.u
+*    , <Prout CHECKING e.w'-'e.u> :
+    , <System 'julia '<Cp 'Path'>' 'e.w e.u' > mem.txt'> : e.status
+    , <Open 'r' 2 'mem.txt'> :
+    , <Get 2> : {
+        'true' = <RepMember ('p') (<Inc e.i>) (e.N) e.w>;
+        'false' = 0;
+*        <Prout FALSE> 0;
+    };
+
+    ('s') (e.i) (e.N) e.w
+    , <Cp 'p'> : (e.w1)(e.w2)(e.w3)(e.w4)
+    , e.w1<Dup (0) (e.i) e.w2>e.w3<Dup (0) (e.i) e.w4> : e.p
+*    , <Prout CHECKING e.p'-'e.w> :
+    , <System 'julia '<Cp 'Path'>' 'e.p e.w' > mem.txt'> : e.status
+    , <Open 'r' 2 './mem.txt'> :
+    , <Get 2> : {
+        'true' = <RepMember ('s') (<Inc e.i>) (e.N) e.w>;
+        'false' = 0;
+*        <Prout FALSE> 0;
+    };
+
+    ('i') (e.i) (e.N) e.w
+    , <Cp 'p'> : (e.w1)(e.w2)(e.w4)(e.w5)
+    , e.w1<Dup (0) (e.i) e.w2> : e.p
+    , <Dup (0) (e.i) e.w4>e.w5 : e.u
+*    , <Prout CHECKING e.p'-'e.w'-'e.u> :
+    , <System 'julia '<Cp 'Path'>' 'e.p e.w e.u' > mem.txt'> : e.status
+    , <Open 'r' 2 './mem.txt'> :
+    , <Get 2> : {
+        'true'  = <RepMember ('i') (<Inc e.i>) (e.N) e.w>;
+        'false' = 0;
+*        <Prout FALSE> 0;
+    };
+}
+$ENTRY Oracle-MEMBER {
+    e.w
+    = <RepMember (<Cp 'Type'>) (0) (3) e.w> <Close 2 >;
+}
+
+$ENTRY Oracle-EQUIVALENCE {
+    (e.P) e.MaxL
+*    , <Prout e.P (e.MaxL) <Type e.P> (<Type e.MaxL>)> :
+    , <System 'julia generator.jl 'e.P' '<Symb e.MaxL>' > equiv.txt'> : e.Status
+    , <Open 'r' 2 './equiv.txt'> :
+    , <CollectTests 2 () ()> : (e.Ins)e.NotIns
+*    , <Prout InL (e.Ins)'\n'NotInL (e.NotIns)> :
+    , <Close 2> :
+    , <FindCounter (1) e.Ins> : {
+        True
+        , <FindCounter (0) e.NotIns> : {
+            True = True;
+            False e.Counter (s.Actual) = False e.Counter (s.Actual);
+*            False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
+        };
+        False e.Counter (s.Actual) = False e.Counter (s.Actual);
+*         False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
+    };
+}
+
+FindMinCounter {
+    (s.Actual) e.C ()
+    = e.C;
+    (s.Actual) (s.a e.C-E)
+    , <Oracle-MEMBER s.a> : {
+        s.Actual = s.a;
+        s.Else = <FindMinCounter (s.Actual) s.a (e.C-E)>;
+    };
+    (s.Actual) e.C (s.a e.C-E)
+    , <Oracle-MEMBER e.C> : {
+        s.Actual = e.C;
+        s.Else = <FindMinCounter (s.Actual) e.C s.a (e.C-E)>;
+    };
+}
+
+FindCounter {
+    (s.Want) /*empty*/
+    = True;
+    (s.Want) (e.w) e.w-e
+    , <Oracle-MEMBER e.w> : {
+        s.Want = <FindCounter (s.Want) e.w-e>;
+        s.Else = False e.w (s.Else);
+*        <Prout expected s.Want 'but got 's.Else' for 'e.w>;
+    };
+}
+
+CollectTests {
+    s.Stream (e.Ins) (e.NotIns)
+    , <Get s.Stream> : {
+        0 = (e.Ins) e.NotIns;
+        'in=false' = <CollectTests s.Stream (e.Ins) (e.NotIns)>;
+        'notin=false' = <CollectTests s.Stream (e.Ins) (e.NotIns)>;
+        'in='e.W
+        , e.Ins : {
+            e.I-B (e.W) e.I-E = <CollectTests s.Stream (e.Ins) (e.NotIns)>;
+            e.I = <CollectTests s.Stream (e.Ins (e.W)) (e.NotIns)>;
+        };
+
+        'notin='e.W
+        , e.NotIns : {
+            e.NI-B (e.W) e.NI-E = <CollectTests s.Stream (e.Ins) (e.NotIns)>;
+            e.NI = <CollectTests s.Stream (e.Ins) (e.NotIns (e.W))>;
+        };
+    };
+}

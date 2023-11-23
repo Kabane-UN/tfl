@@ -1,0 +1,43 @@
+$ENTRY Oracle-Get {
+    e.Path = <Br 'Path='e.Path>;
+}
+
+$ENTRY Oracle-MEMBER {
+    e.w
+    , <System 'julia '<Cp 'Path'>' 'e.w' > mem.txt'> : e.Status
+    , <Open 'r' 2 'mem.txt'> :
+    , <Get 2> : {
+        'true' = 1;
+        'false' = 0;
+    };
+}
+
+$ENTRY Oracle-EQUIVALENCE {
+    (e.P) e.MaxL
+*    , <Prout e.P (e.MaxL) <Type e.P> (<Type e.MaxL>)> :
+    , <System 'julia generator.jl 'e.P' '<Symb e.MaxL>' > equiv.txt'> : e.Status
+    , <Open 'r' 2 './equiv.txt'> :
+    , <CollectTests 2 () ()> : (e.Ins)e.NotIns
+    , <Prout InL (e.Ins)'\n'NotInL (e.NotIns)> :
+    , <Close 2> :
+    , <FindCounter (1) e.Ins> : {
+        True
+        , <FindCounter (0) e.NotIns> : {
+            True = True <Prout 1>;
+            False e.Counter (s.Actual) = <Prout 2>False e.Counter (s.Actual)
+*            False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
+        };
+        False e.Counter (s.Actual) = <Prout 3>False e.Counter (s.Actual)
+*         False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
+    };
+}
+
+FindCounter {
+    (s.Want) /*empty*/
+    = True;
+    (s.Want) (e.w) e.w-e
+    , <Oracle-MEMBER e.w> : {
+        s.Want = <FindCounter (s.Want) e.w-e>;
+        s.Else = False <Prout expected s.Want 'but got 's.Else' for 'e.w>e.w (s.Else);
+    };
+}

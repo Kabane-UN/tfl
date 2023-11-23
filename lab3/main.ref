@@ -1,0 +1,220 @@
+*$FROM LibraryEx
+$EXTERN Map, Inc;
+*$FROM mySort
+$EXTERN Sort1;
+*$FROM Oracle
+$EXTERN Oracle-MEMBER, Oracle-EQUIVALENCE, Oracle-Get, Oracle-SetSuf,
+Oracle-SetPrf, Oracle-SetInf;
+*$FROM table
+$EXTERN ExdTable-Create, ExdTable-Insert, ExdTable-IsClosed,
+ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
+
+
+$ENTRY Go {
+    , <Open 'r' 1 <Arg 1>> :
+    , <Open 'w' 3 'fsm.txt'> :
+
+    , <ReadInput 1> :
+        '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
+        '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5
+
+*    , <Prout
+*              'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
+*              '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+    , <Br 'Path='e.Path> :
+    , <Br 'C='e.C> :
+    , <Br 'P='e.P> :
+    , <Br 'PP='e.PP> :
+    , <Br 'S='e.S> :
+    = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> <Close 1> <Close 2> <Close 3>;
+
+}
+
+GetLang {
+    'p' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
+    , <Lenw e.w1> : s.w1l e.w1
+    , <Br 'THold='<Add (s.w1l) <Numb <Cp 'C'>>>> :
+    , <Oracle-Get <Cp 'Path'> (p)> :
+    , <GetAlphabet e.w1 ()> : e.w1A
+    , (e.w1A) <SubS e.w1A> : e.w1A^
+    , <AbtLoop ('p') (<Cp 'PP'>) e.w1A (e.w2)(e.w3)(e.w4)(e.w5)> : {
+        success = ;
+*        <Prout 'Language in com.txt'>;
+        /*empty*/ = ;
+    };
+
+    's' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
+    , <Lenw e.w5> : s.w5l e.w5
+    , <Br 'THold='<Add (s.w5l) <Numb <Cp 'C'>>>> :
+    , <Oracle-Get <Cp 'Path'> (s)> :
+    , <GetAlphabet e.w5 ()> : e.w5A
+    , (e.w5A) <SubS e.w5A> : e.w5A^
+    , <Close 1> :
+    , <AbtLoop ('s') (<Cp 'PP'>) e.w5A (e.w1)(e.w2)(e.w3)(e.w4)> : {
+        success = ;
+*        <Prout 'Language in com.txt'>;
+        /*empty*/ = ;
+    };
+
+    'i' (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)
+    , <Lenw e.w3> : s.w3l e.w3
+    , <Br 'THold='<Add (s.w3l) <Numb <Cp 'C'>>>> :
+    , <Oracle-Get <Cp 'Path'> (i)> :
+    , <GetAlphabet e.w3 ()> : e.w3A
+    , (e.w3A) <SubS e.w3A> : e.w3A^
+    , <Close 1> :
+    , <AbtLoop ('i') (<Cp 'PP'>) e.w3A (e.w1)(e.w2)(e.w4)(e.w5)> : {
+        success = ;
+*        <Prout 'Language in com.txt'>;
+        /*empty*/ = ;
+    };
+
+
+}
+
+GetAlphabet {
+    /*empty*/ (e.a) = e.a;
+    e.w s.c (e.a-b s.c e.a-e) = <GetAlphabet e.w (e.a-b s.c e.a-e)>;
+    e.w s.c (e.a) = <GetAlphabet e.w (e.a s.c)>;
+}
+
+Dup {
+    (e.i) (e.n)
+    = ;
+    (e.n) (e.n) e.w
+    = ;
+    (e.i) (e.n) e.w
+    = e.w <Dup (<Inc e.i>) (e.n) e.w>;
+}
+
+AbtLoop {
+    (e.PP) (e.w2)(e.w3)(e.w4)(e.w5)
+    = <Prout 'There is no language. Error?'>;
+    ('p') (e.PP) (e.A) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)
+    , <LearnP (0) <Numb e.PP> (e.A) (e.w2)(e.w3)(e.w4)(e.w5)> : {
+        fail = <AbtLoop (e.PP) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)>;
+        success = success;
+    };
+
+    ('s') (e.PP) (e.A) e.A-E (e.w1)(e.w2)(e.w3)(e.w4)
+    , <LearnS <Numb e.PP> (e.A) (e.w1)(e.w2)(e.w3)(e.w4)> : {
+        fail = <AbtLoop (e.PP) e.A-E (e.w1)(e.w2)(e.w3)(e.w4)>;
+        success = success;
+    };
+
+    ('i') (e.PP) (e.A) e.A-E (e.w1)(e.w2)(e.w4)(e.w5)
+    , <LearnI <Numb e.PP> (e.A) (e.w1)(e.w2)(e.w4)(e.w5)> : {
+        fail = <AbtLoop (e.PP) e.A-E (e.w1)(e.w2)(e.w4)(e.w5)>;
+        success = success;
+    };
+}
+
+LearnP {
+    e.PP (e.Abt) (e.w2)(e.w3)(e.w4)(e.w5)
+    , <Oracle-SetSuf (e.w2)(e.w3)(e.w4)(e.w5)> :
+*    , <Prout '['LOG']' u is e.u> :
+*    , <Prout Learning on e.Abt> :
+    , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
+    , <LStarLoop t.ExdTable> : {
+        fail = fail;
+        t.T
+*        , <ExdTable-Print t.T> :
+        , <Open 'w' 4 <Arg 2>> :
+        , <Putout 4 <ExdTable-ToDFA t.T>> :
+        , <Close 4> :
+        = success;
+    };
+}
+
+LearnS {
+    e.PP (e.Abt) (e.w1)(e.w2)(e.w3)(e.w4)
+    , <Oracle-SetPrf (e.w1)(e.w2)(e.w3)(e.w4)> :
+*    , <Prout '['LOG']' p is (e.w1)(e.w2)(e.w3)(e.w4)> :
+*    , <Prout Learning on e.Abt> :
+    , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
+    , <LStarLoop t.ExdTable> : {
+        fail = fail;
+        t.T
+*        , <ExdTable-Print t.T> :
+        , <Open 'w' 4 <Arg 2>> :
+        , <Putout 4 <ExdTable-ToDFA t.T>> :
+        , <Close 4> :
+        = success;
+    };
+}
+
+LearnI {
+    e.PP (e.Abt) (e.w1)(e.w2)(e.w4)(e.w5)
+    , <Oracle-SetPrf (e.w1)(e.w2)(e.w4)(e.w5)> :
+*    , <Prout '['LOG']' u is e.u> :
+*    , <Prout Learning on e.Abt> :
+    , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
+    , <LStarLoop t.ExdTable> : {
+        fail = fail;
+        t.T
+*        , <ExdTable-Print t.T> :
+        , <Open 'w' 4 <Arg 2>> :
+        , <Putout 4 <ExdTable-ToDFA t.T>> :
+        , <Close 4> :
+        = success;
+    };
+}
+
+$ENTRY LStarLoop {
+    t.ExdTable
+    , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
+    , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
+*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+*    , <ExdTable-Print t.ExdTable> :
+*    , <Prout <Dup (0) (5) '#'>> :
+    , e.ConS : {
+        True
+        , e.CloS : {
+            True = <LStarTest t.ExdTable>;
+            False = <LStarLoop t.ExdTable>;
+        };
+        False = <LStarLoop t.ExdTable>;
+    };
+}
+
+$ENTRY LStarTest {
+    t.ExdTable
+    , <ExdTable-DFASize t.ExdTable> : e.Size (e.T1Rows) (e.States) e.StatesEnum
+*    , <Prout (e.Size) <Cp 'THold'> <Type e.Size> <Type <Cp 'THold'>> >:
+    , <Compare (e.Size) <Cp 'THold'>>: {
+        '-'
+        , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
+        , <Putout 3 e.DFA> :
+*        , <Prout 'BUILD AUTOMATA' e.DFA> :
+*        , <Close 3> :
+        , <Oracle-EQUIVALENCE (<Cp 'P'>) 10> : {
+            True = t.ExdTable;
+*            <Prout success> t.ExdTable;
+            False e.Counter (s.Actual) =
+*            <Prout INSERTING e.Counter' 'with (s.Actual)>
+             <LStarLoop
+                <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
+        };
+        e.ge = fail;
+*         <Prout FAILED>fail;
+    }
+}
+
+
+SubS {
+    s.a = (s.a);
+    s.a e.e = <SubSS (s.a) e.e><SubS e.e>;
+}
+
+SubSS {
+    (s.a) s.b e.e = (s.a s.b) <SubSS (s.a) e.e>;
+    (s.a) /*empty*/ = (s.a);
+}
+
+$ENTRY ReadInput {
+    s.Stream
+    , <Get s.Stream> : {
+        e.Line 0 = e.Line;
+        e.Line = e.Line'\n'<ReadInput s.Stream>;
+    };
+}

@@ -1,0 +1,42 @@
+*$FROM LibraryEx
+$EXTERN Reduce;
+
+TermCompare {
+  (e.Left) (e.Right) = <LenCmp (e.Left) (e.Right)>;
+
+  (e.Left) s.Right = '>';
+  s.Left (e.Right) = '<';
+
+  s.Left s.Right = '=';
+}
+
+LenCmp {
+  (t.FirstLeft e.Left) (t.FirstRight e.Right)
+    = <LenCmp (e.Left) (e.Right)>;
+
+  () () = '=';
+
+  () (e.Right) = '<';
+  (e.Left) () = '>';
+}
+
+$ENTRY Sort1 {
+  /* пусто */ = /* пусто */;
+
+  t.Pivot e.Items
+    = <Reduce
+        {
+          ((e.Less) (e.Equal) (e.Greater)) t.Next
+            = <TermCompare t.Next t.Pivot>
+            : {
+                '<' = ((e.Less t.Next) (e.Equal) (e.Greater));
+                '=' = ((e.Less) (e.Equal t.Next) (e.Greater));
+                '>' = ((e.Less) (e.Equal) (e.Greater t.Next));
+              };
+        }
+        ( (/* less */) (t.Pivot /* equal */) (/* greater */) )
+        e.Items
+      >
+    : ((e.Less) (e.Equal) (e.Greater))
+    = <Sort1 e.Less> e.Equal <Sort1 e.Greater>;
+}

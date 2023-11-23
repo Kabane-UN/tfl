@@ -1,33 +1,28 @@
+*$FROM Oracle
+$EXTERN Oracle-MEMBER, Oracle-Get, Oracle-SetSuf;
+
 $INCLUDE "LibraryEx";
 $ENUM Table;
 $ENUM ExdTable;
 
-* Несмотря на название ExdTable - расширенная все таки !вторая таблица!, из двух
+* Несмотря на название ExdTable - расширенная все таки вторая таблица!, из двух
 * содержащихся в ExdTable. Первую называю обычной.
-
-Oracle-MEMBER {
-    eps = 1;
-    '1100' = 1;
-    '00' = 1;
-    '11' = 1;
-    '0110' = 1;
-    '011' = 1;
-    e.W = 0;
-}
 
 /* Создание таблицы
    <- алфавит
    -> структура [ExdTable [Table1] [Table2]]
    Таблицы хранятся так: [T (префиксы) (суффиксы) (пары "префикс-суффикс-принадлежность")]
 */
+* пустое слово входит?
 
 $ENTRY ExdTable-Create {
-    e.Alphabet
+    e.Alphabet (e.Path)
+    , <Br 'Path=./'e.Path> :
     , <Map {s.a = (s.a); = ;} e.Alphabet> : e.SS
     , <Map {(e.Prefix)e.P-E = <ComputeRow (e.Prefix) (eps)>; = ;} e.SS> : e.V
     = <Br 'Abt='e.Alphabet>
     [ExdTable
-    [Table ((eps)) ((eps)) ((eps' 'eps' '1))]
+    [Table ((eps)) ((eps)) ((eps' 'eps' '<Oracle-MEMBER>))]
     [Table
         (e.SS)
         ((eps))
@@ -136,7 +131,7 @@ AddSymb {
 
 }
 
-/* ExdTable-Insrt - вставка в 3 режимах:
+/* ExdTable-Insert - вставка в 3 режимах:
     1) вызов в связи с нарушением полноты. Высчитывается новая строка,
        добавляется в таблицу, расширенная обновляется.
     2) вызов в связи с нарушением непротиворечивости. Добавляется
@@ -160,6 +155,21 @@ $ENTRY ExdTable-Insert {
     , <Table-Update (e.S) t.T e.Prefix> : t.T^
     = [ExdTable [Table (e.S (e.Prefix)) (e.E) (e.V1 e.NewRow)] t.T];
 
+    [ExdTable [Table (e.S) (e.E) (e.V1)] t.T]
+    (notclosedforce) (s.Actual) e.Prefix
+    , e.S : {
+        e.S-B (e.Prefix) e.S-E
+        , e.V1 : e.V1-B (e.Prefix' 'eps' 's.M) e.V1-E
+        = [ExdTable [Table (e.S) (e.E)
+            (e.V1-B(e.Prefix' 'eps' 's.Actual)e.V1-E)] t.T];
+        e.SNP
+        , <ComputeRow (force s.Actual) (e.Prefix) e.E> : e.NewRow
+        , <Table-Update (e.S) t.T e.Prefix> : t.T^
+        = [ExdTable [Table (e.SNP (e.Prefix)) (e.E) (e.V1 e.NewRow)] t.T];
+    };
+*    , <Prout (s.Actual) for e.Prefix> :
+
+
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
     (notconsist) e.Suf
     , e.E (e.Suf) : e.E^
@@ -168,10 +178,15 @@ $ENTRY ExdTable-Insert {
     = [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ];
 
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
-    (counter) e.W
-    , <GetAllPrefixes e.W (1)> : e.Prefs
+    (counter) (s.Actual) e.W
+    , <GetAllPrefixes e.W (1)> : (e.W^)e.Prefs
+    , <ExdTable-Insert
+         [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
+         (notclosed) e.W> : t.ExdTable
+*    , <Prout all prefs e.Prefs of (e.W)> :
     = <InsertAllPrefixes
-        [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
+        t.ExdTable
+*        [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
         e.Prefs>;
 }
 
@@ -207,7 +222,12 @@ GetNewColumn {
     ((e.S)e.S-E) e.Suf (e.V)
     = <FindInTable (e.S e.Suf) e.V> : {
         True e.M = <GetNewColumn (e.S-E) e.Suf (e.V (e.S' 'e.Suf' 'e.M))>;
-        False = <GetNewColumn (e.S-E) e.Suf (e.V (e.S' 'e.Suf' '<Oracle-MEMBER e.S e.Suf>))>;
+        False
+        , e.S : {
+            eps = <GetNewColumn (e.S-E) e.Suf (e.V (e.S' 'e.Suf' '<Oracle-MEMBER e.Suf>))>;
+            e.e = <GetNewColumn (e.S-E) e.Suf (e.V (e.S' 'e.Suf' '<Oracle-MEMBER e.S e.Suf>))>;
+        };
+
     };
     (/*empty*/) e.Suf (e.V)
     = e.V;
@@ -237,6 +257,8 @@ GetAllPrefixes {
 }
 
 ComputeRow {
+     (force s.Actual) (e.Prefix) (eps) e.E
+    = (e.Prefix' 'eps' 's.Actual)<ComputeRow (e.Prefix) e.E>;
     (e.Prefix) /*empty*/ = ;
     (eps) (e.Suffix) e.E
     = (eps' 'e.Suffix<Oracle-MEMBER e.Suffix>)<ComputeRow (eps) e.E>;
@@ -244,6 +266,9 @@ ComputeRow {
     = (e.Prefix' 'eps' '<Oracle-MEMBER e.Prefix>)<ComputeRow (e.Prefix) e.E>;
     (e.Prefix) (e.Suffix) e.E
     = (e.Prefix' 'e.Suffix' '<Oracle-MEMBER e.Prefix e.Suffix>)<ComputeRow (e.Prefix) e.E>;
+
+
+
 }
 
 /* ExdTable-IsClosed - проверяет свойство полноты (см слайды).
@@ -273,7 +298,7 @@ $ENTRY ExdTable-IsClosed {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
     , <GetAllRowsEnum (e.S) (e.E) e.V1 ()> : e.Rows1
     , <GetAllRowsEnum (e.SS) (e.E) e.V2 ()> : e.Rows2
-    , <CompareRows (e.Rows1) (e.Rows2)> : {
+    , <CompareRows (e.Rows1) e.Rows2> : {
         True = True [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]];
         e.Pref = False <ExdTable-Insert [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
         (notclosed) e.Pref>;
@@ -281,12 +306,11 @@ $ENTRY ExdTable-IsClosed {
 }
 
 CompareRows {
-    (e.Rows1-B (e.S (e.Row)) e.Rows-E) (e.Rows2-B (e.SS (e.Row)) e.Rows-E)
-    = <CompareRows (e.Rows1-B (e.S (e.Row)) e.Rows-E) (e.Rows2-B e.Rows-E)>;
-    (e.S (e.Row)) (e.Rows2-B (e.SS (e.Row)) e.Rows-E)
-    = <CompareRows (e.S (e.Row)) e.Rows2-B e.Rows-E>;
-    (e.Rows)e.Rows-E (/*empty*/) = True;
-    (e.Rows)e.Rows-E ((e.S (e.Row))e.Else) = e.S;
+    (e.Rows1-B (e.S (e.Row)) e.Rows1-E) e.Rows2-B (e.SS (e.Row)) e.Rows2-E
+    = <CompareRows (e.Rows1-B (e.S (e.Row)) e.Rows1-E) e.Rows2-B e.Rows2-E>;
+    (e.Rows) /*empty*/ = True;
+    (e.Rows) (e.S (e.Row))e.Else = e.S;
+    e.Else = <Prout error e.Else> <Exit 0>;
 }
 
 GetAllRows {
@@ -370,44 +394,60 @@ GetAllRowsEnum {
     -> (начальные состояния)конечные состояния.
 */
 
+$ENTRY ExdTable-DFASize {
+    [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
+    , <GetAllRowsEnum (e.S) (e.E) e.V1> : e.T1Rows
+    , <SmallestUniq e.T1Rows> : e.States
+    , <GetSDict e.States (0)> : e.St (e.S1 (e.Row)(e.Max))
+    = <Inc e.Max> (e.T1Rows) (e.States) e.St (e.S1 (e.Row)(e.Max));
+}
+
 $ENTRY ExdTable-ToDFA {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
     , <GetAllRowsEnum (e.S) (e.E) e.V1> : e.T1Rows
     , <GetAllRowsEnum (e.SS) (e.E) e.V2> : e.T2Rows
-    , <Prout all rows' 'e.T1Rows> :
+*    , <Prout all rows' 'e.T1Rows' '(e.T2Rows)> :
     , <SmallestUniq e.T1Rows> : e.States
-    , <Prout uniq rows' 'e.States> :
+*    , <Prout uniq rows' 'e.States> :
     , <GetSDict e.States (0)> : e.StatesEnum
     , <DivideStates e.States> : e.F
     , <GetTransitions (e.States) e.T1Rows e.T2Rows> : e.Trans
-    , <Prout Finals' 'e.F'\n'All' 'e.StatesEnum'\n'Transitions' 'e.Trans> :
+*    , <Prout Finals' 'e.F'\n'All' 'e.StatesEnum'\n'Transitions' 'e.Trans> :
 
+    , <DFANF (e.StatesEnum) (e.F) e.Trans> : e.DFA
+    = e.DFA;
+
+    [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
+    (e.T1Rows) (e.States) e.StatesEnum
+    , <GetAllRowsEnum (e.SS) (e.E) e.V2> : e.T2Rows
+    , <DivideStates e.States> : e.F
+    , <GetTransitions (e.States) e.T1Rows e.T2Rows> : e.Trans
     , <DFANF (e.StatesEnum) (e.F) e.Trans> : e.DFA
     = e.DFA;
 }
 
 DecodeState {
     e.S (e.D-B (e.S (e.Row)(e.N)) e.D-E)
-    = e.N;
+    = <Symb e.N>;
 }
 
 DecodeTrans {
     (e.q0)s.t(e.q1) (e.D)
     , e.D : e.D-B (e.S (e.q0)(e.N0)) e.D-E
     , e.D : e.D-B^ (e.S^ (e.q1)(e.N1)) e.D-E^
-    = <Symb e.N0>':'s.t'>'e.N1;
+    = <Symb e.N0>':'s.t'>'<Symb e.N1>;
 }
 
 DFANF {
     (e.States (e.S (e.Row)(e.Max))) (e.F) e.Trans
-    = '#states\n'<Inc e.Max>
-      '\n#initial\n'0
+    = '#states\n'<Symb <Inc e.Max>>
+      '\n#initial\n'<Symb 0>
       '\n#accepting\n'<Map {
         (e.State) = <DecodeState e.State (e.States (e.S (e.Row)(e.Max)))>'\n'
       } e.F>
       '#alphabet\n'<Map {s.c = s.c'\n'} <Cp 'Abt'>>
-      '#transitions\n'<Map {
-        (e.T) = <DecodeTrans e.T (e.States (e.S (e.Row)(e.Max)))>'\n'
+      '#transitions'<Map {
+        (e.T) = '\n'<DecodeTrans e.T (e.States (e.S (e.Row)(e.Max)))>
       } e.Trans>
 }
 
@@ -469,9 +509,9 @@ DivideStates {
         for s, row in rows:
          for ss, next(row) in rows:
           if row == next(row):
-           for char in alphabet:
+           for y in alphabet:
             if row(s+y) != row(ss+y):
-             return s, ss.               Хотя конечно достаточно вернуть один пример.
+             return s, ss.
     <- [ExdTable].
     -> True [ExdTable] | False [ExdTable] после вставки суффикса.
 
@@ -509,14 +549,25 @@ $ENTRY ExdTable-IsConsist {
     , <GetAllRowsEnum (e.S) (e.E) e.V1> <GetAllRowsEnum (e.SS) (e.E) e.V2>: e.Rows
     , <OutLoopC e.Rows (e.E) (e.V1 e.V2)> : {
         True = True [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]];
-        (e.S1 (e.Row1))(e.S2 (e.Row2))
+        (e.S1 (e.Row1))(e.S2 (e.Row2))(e.Rowi)(e.Rowj)
+*        , <Prout not consist' '(e.S1 (e.Row1))(e.S2 (e.Row2))' '(e.Rowi)(e.Rowj)> :
         , <Common (e.S1) e.S2> : e.Common
-        = e.Common;
-    } : e.Suf
-    = False
-        <ExdTable-Insert
-        [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
-        (notconsist) e.Suf>;
+        , <FindBreakingSuf (e.E) (e.Row1) e.Row2> : e.Suf
+        = False
+          <ExdTable-Insert
+          [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
+          (notconsist) e.Common e.Suf>;
+    };
+}
+
+FindBreakingSuf {
+    (/*empty*/) (/*empty*/) /*empty*/ = ;
+    ((e.E-B)e.E-E) (s.M1 e.M1-E) s.M1 e.M2-E
+    = <FindBreakingSuf (e.E-E) (e.M1-E) e.M2-E>;
+    ((eps)e.E-E) (s.M1 e.M1-E) s.M2 e.M2-E
+    = ;
+    ((e.E-B)e.E-E) (s.M1 e.M1-E) s.M2 e.M2-E
+    = e.E-B;
 }
 
 Common {
@@ -550,7 +601,7 @@ AbtLoopC {
         (e.SS1 (e.Row1E))
         , <GetRowEnum (e.S22) (e.E) e.V2 ()> : {
             (e.SS2 (e.Row1E)) = <AbtLoopC (e.Row1) (e.Row2) (e.Rows) e.Abt (e.E) (e.V2)>;
-            (e.SS2 (e.Else)) = (e.SS1 (e.Row1E)) (e.SS2 (e.Else));
+            (e.SS2 (e.Else)) = (e.SS1 (e.Row1E)) (e.SS2 (e.Else)) (e.Row1) (e.Row2);
             /*empty*/ = True;
         };
     };
@@ -562,38 +613,4 @@ AbtLoopC {
 ExdView {
     eps (e.Row) s.s = s.s;
     e.S (e.Row) s.s = e.S s.s;
-}
-
-$ENTRY Go {
-*    , <ExdTable-Create '01'> : t.ExdTable
-*    , <ExdTable-Print t.ExdTable> :
-*    , <Prout>:
-*    , <ExdTable-IsClosed t.ExdTable> : e.Status t.ExdTable^
-*    , <Prout e.Status> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <Prout>:
-*    , <ExdTable-Insert t.ExdTable (counter) '11'> : t.ExdTable^
-*    , <Prout t.ExdTable> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <ExdTable-IsConsist t.ExdTable> : e.Status^ t.ExdTable^
-*    , <ExdTable-Print t.ExdTable> :
-*    , <ExdTable-Insert t.ExdTable (counter) '011'> : t.ExdTable^
-*    , <ExdTable-Print t.ExdTable> :
-*    , <ExdTable-ToDFA t.ExdTable> :
-    , [ExdTable
-          [Table ((eps)('b')('ba')('bb')) ((eps)('a'))
-           ((eps' 'eps' '0)(eps' ''a'' '0)('b 'eps' '0)('b a '1)
-           ('ba 'eps' '1)('ba a '0)('bb 'eps' '1)('bb a '1))]
-          [Table (('a')('baa')('bab')('bba')('bbb'))
-              ((eps)('a'))
-              (('a 'eps' '0)('a a '0)('baa 'eps' '0)('baa a '0)('bab 'eps' '0)('bab a '1)
-              ('bba 'eps' '1)('bba a '0)('bbb 'eps' '1)('bbb a '1))
-          ]] : t.ExdTable
-    , <Br 'Abt=ab'>:
-    , <ExdTable-Print t.ExdTable> :
-
-    , <ExdTable-ToDFA t.ExdTable> : e.DFA
-    = <Prout e.DFA>;
-
 }

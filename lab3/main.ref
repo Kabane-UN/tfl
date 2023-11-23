@@ -56,8 +56,8 @@ GetLang {
     , <GetAlphabet e.w1 ()> : e.w1A
     , (e.w1A) <SubS e.w1A> : e.w1A^
     , <AbtLoop ('p') (<Cp 'PP'>) e.w1A (e.w2)(e.w3)(e.w4)(e.w5)> : {
-        success =
-        <Prout 'Language in com.txt'>;
+        success = ;
+*        <Prout 'Language in com.txt'>;
         e.w = <Prout hz e.w>;
     };
 
@@ -82,8 +82,8 @@ GetLang {
     , (e.w3A) <SubS e.w3A> : e.w3A^
     , <Close 1> :
     , <AbtLoop ('i') (<Cp 'PP'>) e.w3A (e.w1)(e.w2)(e.w4)(e.w5)> : {
-        success =
-        <Prout 'Language in com.txt'>;
+        success = ;
+*        <Prout 'Language in com.txt'>;
         e.w = <Prout hz e.w>;
 
     };
@@ -183,9 +183,9 @@ LStarLoop {
     t.ExdTable
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-    , <ExdTable-Print t.ExdTable> :
-    , <Prout <Dup (0) (5) '#'>> :
+*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+*    , <ExdTable-Print t.ExdTable> :
+*    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {

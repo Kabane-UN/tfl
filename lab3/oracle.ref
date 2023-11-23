@@ -70,6 +70,7 @@ RepMember {
         'false' = 0;
 *        <Prout FALSE> 0;
     };
+
 }
 $ENTRY Oracle-MEMBER {
     e.w
@@ -79,7 +80,7 @@ $ENTRY Oracle-MEMBER {
 $ENTRY Oracle-EQUIVALENCE {
     (e.P) e.MaxL
 *    , <Prout e.P (e.MaxL) <Type e.P> (<Type e.MaxL>)> :
-    , <System 'julia generator.jl 'e.P' '<Symb e.MaxL>' > equiv.txt'> : e.Status
+    , <System 'julia generator.jl '<Symb e.MaxL>' 'e.P' > equiv.txt'> : e.Status
     , <Open 'r' 2 './equiv.txt'> :
     , <CollectTests 2 () ()> : (e.Ins)e.NotIns
 *    , <Prout InL (e.Ins)'\n'NotInL (e.NotIns)> :

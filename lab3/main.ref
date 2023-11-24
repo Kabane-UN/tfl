@@ -13,22 +13,24 @@ ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
 
 $ENTRY Go {
     , <Open 'r' 1 <Arg 1>> :
-
-    , <ReadInput 1> :
-        '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
-        '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
-    , <Close 1> :
-    , <Prout
-              'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
-              '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+    , <ReadInput 1> : '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
     , <Br 'Path='e.Path> :
     , <Br 'C='e.C> :
     , <Br 'P='e.P> :
     , <Br 'PP='e.PP> :
     , <Br 'S='e.S> :
     , e.Type : {
-        'n' = <LearnNeg e.S>;
-        e.Else = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
+        'n'
+         , <Prout 'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S> :
+        = <Close 1><LearnNeg e.S>;
+        s.else
+        , <ReadInput 1> : '#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
+        , <Prout
+        'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
+        '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+        , <Close 1> :
+        = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
+
     };
 }
 
@@ -274,9 +276,16 @@ SubSS {
 ReadInput {
     s.Stream
     , <Get s.Stream> : {
+        '#alphabet' = '#alphabet\n'<ReadInput s.Stream (1)>;
         0 = ;
          = ' \n'<ReadInput s.Stream>;
         e.Line 0 = e.Line;
         e.Line = e.Line'\n'<ReadInput s.Stream>;
     };
+
+    s.Stream (1)
+    = <Get s.Stream>;
 }
+
+
+

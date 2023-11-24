@@ -482,7 +482,9 @@ begin
     @run_l_star
     li = parse_fsm(read_from_file("com.txt"))
     counterexamples = []
-    for _ in 1:(C + length(ls.tramsitions) + length(lp.tramsitions))
+    len_lp = length(lp.tramsitions)
+    len_ls = length(ls.tramsitions)
+    for _ in 1:(C + len_lp + len_ls)
         w1 = gen_random_word_in_language(lp)
         w5 = gen_random_word_in_language(ls)
         for i in 0:P1
@@ -493,20 +495,20 @@ begin
                 break
             end
         end
-        if length(counterexamples) > (C + length(ls.tramsitions) + length(lp.tramsitions))
+        if length(counterexamples) > (C + len_lp + len_ls)
             break
         end
     end
-    if length(counterexamples) > (C + length(ls.tramsitions) + length(lp.tramsitions))
+    if length(counterexamples) > (C + len_lp + len_ls)
         global res
         write_to_file("lp.txt", Fsm_to_string(lp))
         write_to_file("ls.txt", Fsm_to_string(ls))
-        write_to_file("instructions.txt", gen_instructions(oracle, C, P, P1, alphabet, word, "p"))
-        write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C, P, P1, alphabet))
+        write_to_file("instructions.txt", gen_instructions(oracle, C+len_lp, P, P1, alphabet, word, "p"))
+        write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C+len_lp, P, P1, alphabet))
         @run_l_star
         not_lp = parse_Short_fsm(read_from_file("com.txt"))
-        write_to_file("instructions.txt", gen_instructions(oracle, C, P, P1, alphabet, word, "s"))
-        write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C, P, P1, alphabet))
+        write_to_file("instructions.txt", gen_instructions(oracle, C+len_ls, P, P1, alphabet, word, "s"))
+        write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C+len_ls, P, P1, alphabet))
         @run_l_star
         not_ls = parse_Short_fsm(read_from_file("com.txt"))
         lp = Fsm_to_Short_fsm(lp)

@@ -167,7 +167,6 @@ $ENTRY ExdTable-Insert {
         , <Table-Update (e.S) t.T e.Prefix> : t.T^
         = [ExdTable [Table (e.SNP (e.Prefix)) (e.E) (e.V1 e.NewRow)] t.T];
     };
-*    , <Prout (s.Actual) for e.Prefix> :
 
 
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
@@ -183,10 +182,8 @@ $ENTRY ExdTable-Insert {
     , <ExdTable-Insert
          [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)] ]
          (notclosed) e.W> : t.ExdTable
-*    , <Prout all prefs e.Prefs of (e.W)> :
     = <InsertAllPrefixes
         t.ExdTable
-*        [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
         e.Prefs>;
 }
 
@@ -406,13 +403,10 @@ $ENTRY ExdTable-ToDFA {
     [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]]
     , <GetAllRowsEnum (e.S) (e.E) e.V1> : e.T1Rows
     , <GetAllRowsEnum (e.SS) (e.E) e.V2> : e.T2Rows
-*    , <Prout all rows' 'e.T1Rows' '(e.T2Rows)> :
     , <SmallestUniq e.T1Rows> : e.States
-*    , <Prout uniq rows' 'e.States> :
     , <GetSDict e.States (0)> : e.StatesEnum
     , <DivideStates e.States> : e.F
     , <GetTransitions (e.States) e.T1Rows e.T2Rows> : e.Trans
-*    , <Prout Finals' 'e.F'\n'All' 'e.StatesEnum'\n'Transitions' 'e.Trans> :
 
     , <DFANF (e.StatesEnum) (e.F) e.Trans> : e.DFA
     = e.DFA;
@@ -463,7 +457,7 @@ FindNgbrs {
     , <ExdView2 e.S s.C> : e.SS
     , e.Rows : {
         e.Rows-B (e.SS (e.Row2)) e.Rows-E = ((e.Row) s.C (e.Row2)) <FindNgbrs (e.S (e.Row)) e.Abt (e.Rows-B e.Rows-E)>; /* ДКА => других переходов нет */
-        e.RowsE = <Prout (e.SS (e.Row)) not in e.RowsE> <FindNgbrs (e.S (e.Row)) e.Abt (e.RowsE)>;
+        e.RowsE =  <FindNgbrs (e.S (e.Row)) e.Abt (e.RowsE)>;
     };
     (e.S) /*empty*/ (e.Rows) = ;
 }
@@ -475,7 +469,6 @@ ExdView2 {
 
 SmallestUniq {
     e.R1-B (e.S1 (e.Row1)) e.R1-E e.R2-B (e.S2 (e.Row1)) e.R2-E
-*    , <Prout found' '(e.S2 (e.Row1))' 'like' '(e.S1 (e.Row1))> :
     , <Shorter (e.S1) e.S2> : {
         2 = <SmallestUniq e.R1-B e.R1-E e.R2-B (e.S2 (e.Row1)) e.R2-E>;
         e.NoMatter = <SmallestUniq e.R1-B (e.S1 (e.Row1)) e.R1-E e.R2-B e.R2-E>;
@@ -550,7 +543,6 @@ $ENTRY ExdTable-IsConsist {
     , <OutLoopC e.Rows (e.E) (e.V1 e.V2)> : {
         True = True [ExdTable [Table (e.S) (e.E) (e.V1)] [Table (e.SS) (e.E) (e.V2)]];
         (e.S1 (e.Row1))(e.S2 (e.Row2))(e.Rowi)(e.Rowj)
-*        , <Prout not consist' '(e.S1 (e.Row1))(e.S2 (e.Row2))' '(e.Rowi)(e.Rowj)> :
         , <Common (e.S1) e.S2> : e.Common
         , <FindBreakingSuf (e.E) (e.Row1) e.Row2> : e.Suf
         = False

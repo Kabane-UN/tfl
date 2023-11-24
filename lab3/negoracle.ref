@@ -7,8 +7,8 @@ $ENTRY NOracle-MEMBER {
     , <System 'julia '<Cp 'Path'>' 'e.w' > mem.txt'> : e.Status
     , <Open 'r' 2 'mem.txt'> :
     , <Get 2> : {
-        'true' = 1;
-        'false' = 0;
+        'true' = <Close 2>1;
+        'false' = <Close 2>0;
     };
 }
 
@@ -23,11 +23,11 @@ $ENTRY NOracle-EQUIVALENCE {
     , <FindCounter (1) e.Ins> : {
         True
         , <FindCounter (0) e.NotIns> : {
-            True = True;
-            False e.Counter (s.Actual) = False e.Counter (s.Actual);
+            True = True <Prout 1>;
+            False e.Counter (s.Actual) = <Prout 2> False e.Counter (s.Actual);
 *            False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
         };
-        False e.Counter (s.Actual) = False e.Counter (s.Actual);
+        False e.Counter (s.Actual) = <Prout 3> False e.Counter (s.Actual);
 *         False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
     };
 }
@@ -37,7 +37,7 @@ FindCounter {
     = True;
     (s.Want) (e.w) e.w-e
     , <NOracle-MEMBER e.w> : {
-        s.Want = <FindCounter (s.Want) e.w-e>;
+        s.Want = <Prout e.w' '<NOracle-MEMBER e.w>> <FindCounter (s.Want) e.w-e>;
         s.Else = False e.w (s.Else);
 *         <Prout expected s.Want 'but got 's.Else' for 'e.w>
     };

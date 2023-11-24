@@ -13,12 +13,11 @@ ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
 
 $ENTRY Go {
     , <Open 'r' 1 <Arg 1>> :
-    , <Open 'w' 3 'fsm.txt'> :
 
     , <ReadInput 1> :
         '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
         '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
-
+    , <Close 1> :
     , <Prout
               'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
               '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
@@ -28,8 +27,8 @@ $ENTRY Go {
     , <Br 'PP='e.PP> :
     , <Br 'S='e.S> :
     , e.Type : {
-        'n' = <LearnNeg e.S> <Close 1> <Close 2> <Close 3>;
-        e.Else = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> <Close 1> <Close 2> <Close 3>;
+        'n' = <LearnNeg e.S>;
+        e.Else = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
     };
 }
 
@@ -41,9 +40,9 @@ LearnNeg {
         fail = fail;
         t.T
 *        , <ExdTable-Print t.T> :
-        , <Open 'w' 3 <Arg 2>> :
-        , <Putout 3 <ExdTable-ToDFA t.T>> :
-        , <Close 3> :
+        , <Open 'w' 4 <Arg 2>> :
+        , <Putout 4 <ExdTable-ToDFA t.T>> :
+        , <Close 4> :
         = success;
     };
 }
@@ -107,23 +106,25 @@ Dup {
 }
 
 AbtLoop {
-    (e.PP) (e.w2)(e.w3)(e.w4)(e.w5)
+    (s.Any) (e.PP) (e.w2)(e.w3)(e.w4)(e.w5)
     = <Prout 'There is no language. Error?'>;
+
     ('p') (e.PP) (e.A) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)
+    , <Prout LEARN ON (e.A)> :
     , <LearnP (0) <Numb e.PP> (e.A) (e.w2)(e.w3)(e.w4)(e.w5)> : {
-        fail = <AbtLoop (e.PP) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)>;
+        fail = <AbtLoop ('p') (e.PP) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)>;
         success = success;
     };
 
     ('s') (e.PP) (e.A) e.A-E (e.w1)(e.w2)(e.w3)(e.w4)
     , <LearnS <Numb e.PP> (e.A) (e.w1)(e.w2)(e.w3)(e.w4)> : {
-        fail = <AbtLoop (e.PP) e.A-E (e.w1)(e.w2)(e.w3)(e.w4)>;
+        fail = <AbtLoop ('s') (e.PP) e.A-E (e.w1)(e.w2)(e.w3)(e.w4)>;
         success = success;
     };
 
     ('i') (e.PP) (e.A) e.A-E (e.w1)(e.w2)(e.w4)(e.w5)
     , <LearnI <Numb e.PP> (e.A) (e.w1)(e.w2)(e.w4)(e.w5)> : {
-        fail = <AbtLoop (e.PP) e.A-E (e.w1)(e.w2)(e.w4)(e.w5)>;
+        fail = <AbtLoop ('i') (e.PP) e.A-E (e.w1)(e.w2)(e.w4)(e.w5)>;
         success = success;
     };
 }
@@ -183,9 +184,9 @@ LStarLoop {
     t.ExdTable
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <Prout <Dup (0) (5) '#'>> :
+    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+    , <ExdTable-Print t.ExdTable> :
+    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {
@@ -218,9 +219,11 @@ LStarTest {
     , <Compare (e.Size) <Cp 'THold'>>: {
         '-'
         , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
+        , <Open 'w' 3 'fsm.txt'> :
+
         , <Putout 3 e.DFA> :
 *        , <Prout 'BUILD AUTOMATA' e.DFA> :
-*        , <Close 3> :
+        , <Close 3> :
         , <Oracle-EQUIVALENCE (<Cp 'P'>) 10> : {
             True = t.ExdTable;
 *            <Prout success> t.ExdTable;
@@ -241,8 +244,9 @@ LStarTest {
         '-'
         , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
         , <Putout 3 e.DFA> :
+        , <Open 'w' 3 'fsm.txt'> :
 *        , <Prout 'BUILD AUTOMATA' e.DFA> :
-*        , <Close 3> :
+        , <Close 3> :
         , <NOracle-EQUIVALENCE (<Cp 'P'>) 10> : {
             True = t.ExdTable;
 *            <Prout success> t.ExdTable;

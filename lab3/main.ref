@@ -5,8 +5,6 @@ $EXTERN Sort1;
 *$FROM oracle
 $EXTERN Oracle-MEMBER, Oracle-EQUIVALENCE, Oracle-Get, Oracle-SetSuf,
 Oracle-SetPrf, Oracle-SetInf, Oracle-IsNEG;
-*$FROM negoracle
-$EXTERN NOracle-MEMBER, NOracle-EQUIVALENCE, NOracle-Get;
 *$FROM table
 $EXTERN ExdTable-Create, ExdTable-Insert, ExdTable-IsClosed,
 ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
@@ -22,14 +20,10 @@ $ENTRY Go {
     , e.Type : {
         'n'
         , <Oracle-IsNEG '1'> :
-        , <Prout 'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S> :
         = <Close 1><LearnNeg e.S>;
         s.else
         , <Oracle-IsNEG '0'> :
         , <ReadInput 1> : '#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
-        , <Prout
-        'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
-        '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
         , <Close 1> :
         = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
 
@@ -60,7 +54,6 @@ GetLang {
     , (e.w1A) <SubS e.w1A> : e.w1A^
     , <AbtLoop ('p') (<Cp 'PP'>) e.w1A (e.w2)(e.w3)(e.w4)(e.w5)> : {
         success = ;
-*        <Prout 'Language in com.txt'>;
         e.w = <Prout hz e.w>;
     };
 
@@ -73,7 +66,6 @@ GetLang {
     , <Close 1> :
     , <AbtLoop ('s') (<Cp 'PP'>) e.w5A (e.w1)(e.w2)(e.w3)(e.w4)> : {
         success = ;
-*        <Prout 'Language in com.txt'>;
         e.w = <Prout hz e.w>;
     };
 
@@ -86,7 +78,6 @@ GetLang {
     , <Close 1> :
     , <AbtLoop ('i') (<Cp 'PP'>) e.w3A (e.w1)(e.w2)(e.w4)(e.w5)> : {
         success = ;
-*        <Prout 'Language in com.txt'>;
         e.w = <Prout hz e.w>;
 
     };
@@ -114,7 +105,6 @@ AbtLoop {
     = <Prout 'There is no language. Error?'>;
 
     ('p') (e.PP) (e.A) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)
-    , <Prout LEARN ON (e.A)> :
     , <LearnP (0) <Numb e.PP> (e.A) (e.w2)(e.w3)(e.w4)(e.w5)> : {
         fail = <AbtLoop ('p') (e.PP) e.A-E (e.w2)(e.w3)(e.w4)(e.w5)>;
         success = success;
@@ -136,13 +126,10 @@ AbtLoop {
 LearnP {
     e.PP (e.Abt) (e.w2)(e.w3)(e.w4)(e.w5)
     , <Oracle-SetSuf (e.w2)(e.w3)(e.w4)(e.w5)> :
-*    , <Prout '['LOG']' u is e.u> :
-*    , <Prout Learning on e.Abt> :
     , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
     , <LStarLoop t.ExdTable> : {
         fail = fail;
         t.T
-*        , <ExdTable-Print t.T> :
         , <Open 'w' 4 <Arg 2>> :
         , <Putout 4 <ExdTable-ToDFA t.T>> :
         , <Close 4> :
@@ -153,13 +140,10 @@ LearnP {
 LearnS {
     e.PP (e.Abt) (e.w1)(e.w2)(e.w3)(e.w4)
     , <Oracle-SetPrf (e.w1)(e.w2)(e.w3)(e.w4)> :
-*    , <Prout '['LOG']' p is (e.w1)(e.w2)(e.w3)(e.w4)> :
-*    , <Prout Learning on e.Abt> :
     , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
     , <LStarLoop t.ExdTable> : {
         fail = fail;
         t.T
-*        , <ExdTable-Print t.T> :
         , <Open 'w' 4 <Arg 2>> :
         , <Putout 4 <ExdTable-ToDFA t.T>> :
         , <Close 4> :
@@ -170,13 +154,10 @@ LearnS {
 LearnI {
     e.PP (e.Abt) (e.w1)(e.w2)(e.w4)(e.w5)
     , <Oracle-SetInf (e.w1)(e.w2)(e.w4)(e.w5)> :
-*    , <Prout '['LOG']' u is e.u> :
-*    , <Prout Learning on e.Abt> :
     , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
     , <LStarLoop t.ExdTable> : {
         fail = fail;
         t.T
-*        , <ExdTable-Print t.T> :
         , <Open 'w' 4 <Arg 2>> :
         , <Putout 4 <ExdTable-ToDFA t.T>> :
         , <Close 4> :
@@ -188,9 +169,6 @@ LStarLoop {
     t.ExdTable
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-    , <ExdTable-Print t.ExdTable> :
-    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {
@@ -203,9 +181,6 @@ LStarLoop {
     t.ExdTable (N)
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-    , <ExdTable-Print t.ExdTable> :
-    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {
@@ -219,25 +194,19 @@ LStarLoop {
 LStarTest {
     t.ExdTable
     , <ExdTable-DFASize t.ExdTable> : e.Size (e.T1Rows) (e.States) e.StatesEnum
-*    , <Prout (e.Size) <Cp 'THold'> <Type e.Size> <Type <Cp 'THold'>> >:
     , <Compare (e.Size) <Cp 'THold'>>: {
         '-'
         , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
         , <Open 'w' 3 'fsm.txt'> :
-
         , <Putout 3 e.DFA> :
-*        , <Prout 'BUILD AUTOMATA' e.DFA> :
         , <Close 3> :
         , <Oracle-EQUIVALENCE (<Cp 'P'>) 10> : {
             True = t.ExdTable;
-*            <Prout success> t.ExdTable;
             False e.Counter (s.Actual) =
-*            <Prout INSERTING e.Counter' 'with (s.Actual)>
              <LStarLoop
                 <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
         };
         e.ge = fail;
-*         <Prout FAILED>fail;
     };
 
 
@@ -246,14 +215,10 @@ LStarTest {
     , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
     , <Open 'w' 3 'fsm.txt'> :
     , <Putout 3 e.DFA> :
-
-*        , <Prout 'BUILD AUTOMATA' e.DFA> :
     , <Close 3> :
     , <NOracle-EQUIVALENCE (<Cp 'P'>) 10> : {
         True = t.ExdTable;
-*            <Prout success> t.ExdTable;
         False e.Counter (s.Actual) =
-*            <Prout INSERTING e.Counter' 'with (s.Actual)>
          <LStarLoop
             <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
     };

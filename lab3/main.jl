@@ -186,7 +186,7 @@ function union_Short_fsm(fsm1, fsm2)
     initial = 1
     len_states = length(fsm1.states)
     accepting = [[i+1 for i in fsm1.accepting];[i+1+len_states for i in fsm2.accepting]]
-    states = [[i+1 for i in fsm1.states];[i+1+len_states for i in fsm2.states]]
+    states = [1;[i+1 for i in fsm1.states];[i+1+len_states for i in fsm2.states]]
     multy_transitions = [Multy_transition(initial, "ϵ", [fsm1.initial+1, fsm2.initial+1+len_states])]
     for multy_transition in fsm1.multy_transitions
         push!(multy_transitions, Multy_transition(multy_transition.from+1, multy_transition.by, [to+1 for to in multy_transition.to]))
@@ -450,7 +450,11 @@ function gen_result(fsm1, fsm2)
         return "ø"
     else
         res_fsm = minimize(res_fsm)
-        return Short_fsm_to_string(res_fsm)
+        if isempty(res_fsm.accepting)
+            return "ø"
+        else
+            return Short_fsm_to_string(res_fsm)
+        end
     end
 end
 macro run_l_star()

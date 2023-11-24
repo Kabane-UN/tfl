@@ -1,10 +1,16 @@
+-- Prefix
+ø
+-- Infix
 #states
-1
+2
 #initial
 0
 #accepting
-0
+1
 #alphabet
-a
+c
 #transitions
-0:a>0
+0:c>1
+1:c>1
+-- Postfix
+ø

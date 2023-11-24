@@ -5,6 +5,7 @@ $ENTRY Oracle-Get {
     e.Path (e.PP) (p) = <Br 'Path='e.Path><Br 'Type=p'><Br 'PP='e.PP>;
     e.Path (e.PP) (s) = <Br 'Path='e.Path><Br 'Type=s'><Br 'PP='e.PP>;
     e.Path (e.PP) (i) = <Br 'Path='e.Path><Br 'Type=i'><Br 'PP='e.PP>;
+    e.Path = <Br 'Path='e.Path>;
 }
 
 $ENTRY Oracle-IsNEG {
@@ -84,8 +85,6 @@ $ENTRY Oracle-MEMBER {
              'false' = 0;
          };
     };
-*   here bugs
-
 }
 
 $ENTRY Oracle-EQUIVALENCE {

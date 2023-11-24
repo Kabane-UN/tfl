@@ -1,10 +1,11 @@
 #states
-1
+2
 #initial
 0
 #accepting
-0
+1
 #alphabet
 a
 #transitions
-0:a>0
+0:a>1
+1:a>1

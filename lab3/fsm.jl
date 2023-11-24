@@ -194,9 +194,9 @@ function not_fsm(fsm)
 end
 
 function Fsm_to_string(fsm)
-    res = "#states\n$(length(fsm.tramsitions))\n#initial\n$(fsm.initial)\n#accepting\n"
+    res = "#states\n$(length(fsm.tramsitions))\n#initial\n$(fsm.initial-1)\n#accepting\n"
     for i in fsm.accepting
-        res *= "$i\n"
+        res *= "$(i-1)\n"
     end
     res *= "#alphabet\n"
     for i in fsm.alphabet
@@ -206,7 +206,7 @@ function Fsm_to_string(fsm)
     for i in fsm.states
         for j in i.to_transitions
             for k in j[2]
-                res *= "$(i.number):$k>$(j[1])\n"
+                res *= "$(i.number-1):$k>$(j[1]-1)\n"
             end
         end
     end

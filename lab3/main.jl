@@ -485,7 +485,7 @@ begin
     counterexamples = []
     len_lp = length(lp.tramsitions)
     len_ls = length(ls.tramsitions)
-    for _ in 1:(C + len_lp + len_ls)
+    for _ in 1:(C + len_lp + len_ls)*3
         w1 = gen_random_word_in_language(lp)
         w5 = gen_random_word_in_language(ls)
         for i in 0:P1

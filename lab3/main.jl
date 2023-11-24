@@ -16,7 +16,7 @@ mutable struct Short_fsm
     multy_transitions
 end
 function gen_oracle(regex)
-    return "println(occursin(r\"$regex\", ARGS[1]))"
+    return "isempty(ARGS) ? println(occursin(r\"$regex\", \"\")) : println(occursin(r\"$regex\", ARGS[1]))"
 end
 function gen_instructions(oracle, C, P, P1, alphabet, word, for_part)
     res = "#oracle\n$oracle\n#const\n$C\n$P\n$P1\n#alphabet\n"

@@ -37,12 +37,12 @@ RepMember {
 *    , <Prout e.i (e.N)> :
     , <Cp 'u'> : (e.w2)(e.w3)(e.w4)(e.w5)
     , <Dup (0) (e.i) e.w2>e.w3<Dup (0) (e.i) e.w4>e.w5 : e.u
-*    , <Prout CHECKING e.w'-'e.u> :
+    , <Prout CHECKING e.w'-'e.u> :
     , <System 'julia '<Cp 'Path'>' 'e.w e.u' > mem.txt'> : e.status
     , <Open 'r' 2 'mem.txt'> :
     , <Get 2> : {
-        'true' = <RepMember ('p') (<Inc e.i>) (e.N) e.w>;
-        'false' = 0;
+        'true' = <Close 2><RepMember ('p') (<Inc e.i>) (e.N) e.w>;
+        'false' = <Close 2>0;
 *        <Prout FALSE> 0;
     };
 
@@ -53,8 +53,8 @@ RepMember {
     , <System 'julia '<Cp 'Path'>' 'e.p e.w' > mem.txt'> : e.status
     , <Open 'r' 2 './mem.txt'> :
     , <Get 2> : {
-        'true' = <RepMember ('s') (<Inc e.i>) (e.N) e.w>;
-        'false' = 0;
+        'true' = <Close 2><RepMember ('s') (<Inc e.i>) (e.N) e.w>;
+        'false' = <Close 2>0;
 *        <Prout FALSE> 0;
     };
 
@@ -66,15 +66,19 @@ RepMember {
     , <System 'julia '<Cp 'Path'>' 'e.p e.w e.u' > mem.txt'> : e.status
     , <Open 'r' 2 './mem.txt'> :
     , <Get 2> : {
-        'true'  = <RepMember ('i') (<Inc e.i>) (e.N) e.w>;
-        'false' = 0;
+        'true'  = <Close 2><RepMember ('i') (<Inc e.i>) (e.N) e.w>;
+        'false' = <Close 2>0;
 *        <Prout FALSE> 0;
     };
 
 }
 $ENTRY Oracle-MEMBER {
     e.w
-    = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w> <Close 2 >;
+*   here bugs
+    , <Oracle-FMEM e.w> : {
+        'true' = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w>;
+        'false' = 0;
+    };
 }
 
 $ENTRY Oracle-EQUIVALENCE {
@@ -96,6 +100,15 @@ $ENTRY Oracle-EQUIVALENCE {
 *         False <FindMinCounter (s.Actual) (e.Counter)> (s.Actual);
     };
 }
+
+$ENTRY Oracle-FMEM {
+    e.w
+*    , <Prout CHECKING e.w> :
+    , <System 'julia '<Cp 'Path'>' 'e.w' > mem.txt'> : e.status
+    , <Open 'r' 2 'mem.txt'> :
+    = <Get 2> <Close 2>;
+}
+
 
 FindMinCounter {
     (s.Actual) e.C ()

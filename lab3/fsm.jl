@@ -169,6 +169,7 @@ function is_in_language(fsm, word)
         for term in Vector{String}(split(word, ""))
             for j in current_state.to_transitions
                 if term in j[2]
+                    current_state = fsm.states[j[1]]
                     @goto ok
                 end
             end

@@ -17,7 +17,7 @@ function parse_inputs(lines)
     C = NaN
     P = NaN
     P1 = NaN
-    oracle = ""
+    oracle = []
     alphabet = Set()
     word = []
     count = 1
@@ -36,7 +36,7 @@ function parse_inputs(lines)
             flag = "for"
         else
             if flag == "oracle"
-                oracle = line
+                push!(oracle, line)
             elseif flag == "const"
                 num = parse(Int, line)
                 if count == 1

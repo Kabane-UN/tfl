@@ -461,8 +461,7 @@ begin
     res = "-- Prefix\nø\n-- Infix\nø\n-- Postfix\nø"
     input_lines = read_from_file("input.txt")
     oracle, C, P, P1, alphabet, word, _ = parse_inputs(input_lines)
-    regex = Regex(oracle)
-    write_to_file("oracle.jl", gen_oracle(oracle))
+    regex = Regex(oracle[1])
     for i in 0:P1-1
         s = word[1]*word[2]^i*word[3]*word[4]^i*word[5]
         result = occursin(regex, s)
@@ -471,13 +470,15 @@ begin
             @goto ex
         end
     end
-    write_to_file("oracle.jl", gen_oracle(oracle))
+    write_to_file("oracle.jl", gen_oracle(oracle[2]))
     write_to_file("com.txt", gen_com("oracle.jl", "p", C, P, P1, alphabet, word))
     @run_l_star
     lp = parse_fsm(read_from_file("com.txt"))
+    write_to_file("oracle.jl", gen_oracle(oracle[3]))
     write_to_file("com.txt", gen_com("oracle.jl", "s", C, P, P1, alphabet, word))
     @run_l_star
     ls = parse_fsm(read_from_file("com.txt"))
+    write_to_file("oracle.jl", gen_oracle(oracle[1]))
     write_to_file("com.txt", gen_com("oracle.jl", "i", C, P, P1, alphabet, word))
     @run_l_star
     li = parse_fsm(read_from_file("com.txt"))
@@ -501,11 +502,11 @@ begin
         global res
         write_to_file("lp.txt", Fsm_to_string(lp))
         write_to_file("ls.txt", Fsm_to_string(ls))
-        write_to_file("instructions.txt", gen_instructions(oracle, C, P, P1, alphabet, word, "p"))
+        write_to_file("instructions.txt", gen_instructions(oracle[1], C, P, P1, alphabet, word, "p"))
         write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C, P, P1, alphabet))
         @run_l_star
         not_lp = parse_Short_fsm(read_from_file("com.txt"))
-        write_to_file("instructions.txt", gen_instructions(oracle, C, P, P1, alphabet, word, "s"))
+        write_to_file("instructions.txt", gen_instructions(oracle[1], C, P, P1, alphabet, word, "s"))
         write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C, P, P1, alphabet))
         @run_l_star
         not_ls = parse_Short_fsm(read_from_file("com.txt"))

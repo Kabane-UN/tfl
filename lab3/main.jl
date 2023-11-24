@@ -462,8 +462,10 @@ macro run_l_star()
 end
 
 begin
+    imput = ARGS[1]
+    output = ARGS[2]
     res = "-- Prefix\nø\n-- Infix\nø\n-- Postfix\nø"
-    input_lines = read_from_file("input.txt")
+    input_lines = read_from_file(imput)
     oracle, C, P, P1, alphabet, word, _ = parse_inputs(input_lines)
     regex = Regex(oracle[1])
     for i in 0:P1-1
@@ -524,5 +526,5 @@ begin
         res = "-- Prefix\n$(Fsm_to_string(lp))\n-- Infix\n$(Fsm_to_string(li))\n-- Postfix\n$(Fsm_to_string(ls))"
     end
     @label ex
-    write_to_file("output.txt", res)
+    write_to_file(output, res)
 end

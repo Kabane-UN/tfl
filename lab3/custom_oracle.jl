@@ -41,11 +41,12 @@ function is_not_s(lp, ls, s, oracle, word, P, P1)
     end
 end
 oracle, C, P, P1, alphabet, word, for_part = parse_inputs(read_from_file("instructions.txt"))
-oracle = Regex(oracle)
+oracle = Regex(oracle[1])
 lp = parse_fsm(read_from_file("lp.txt"))
 ls = parse_fsm(read_from_file("ls.txt"))
+str = isempty(ARGS) ? "" : ARGS[1]
 if for_part == "p"
-    println(is_not_p(lp, ls, ARGS[1], oracle, word, P, P1))
+    println(is_not_p(lp, ls, str, oracle, word, P, P1))
 else
-    println(is_not_s(lp, ls, ARGS[1], oracle, word, P, P1))
+    println(is_not_s(lp, ls, str, oracle, word, P, P1))
 end

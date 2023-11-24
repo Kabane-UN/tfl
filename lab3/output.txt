@@ -1,0 +1,16 @@
+-- Prefix
+ø
+-- Infix
+#states
+2
+#initial
+0
+#accepting
+1
+#alphabet
+c
+#transitions
+0:c>1
+1:c>1
+-- Postfix
+ø

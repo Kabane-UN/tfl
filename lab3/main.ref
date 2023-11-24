@@ -4,7 +4,7 @@ $EXTERN Map, Inc;
 $EXTERN Sort1;
 *$FROM oracle
 $EXTERN Oracle-MEMBER, Oracle-EQUIVALENCE, Oracle-Get, Oracle-SetSuf,
-Oracle-SetPrf, Oracle-SetInf;
+Oracle-SetPrf, Oracle-SetInf, Oracle-IsNEG;
 *$FROM negoracle
 $EXTERN NOracle-MEMBER, NOracle-EQUIVALENCE, NOracle-Get;
 *$FROM table
@@ -13,22 +13,26 @@ ExdTable-IsConsist, ExdTable-Print, ExdTable-ToDFA, ExdTable-DFASize;
 
 $ENTRY Go {
     , <Open 'r' 1 <Arg 1>> :
-
-    , <ReadInput 1> :
-        '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
-        '\n#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
-    , <Close 1> :
-    , <Prout
-              'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
-              '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+    , <ReadInput 1> : '#oracle\n'e.Path'\n#for\n'e.Type'\n#const\n'e.C'\n'e.P'\n'e.PP'\n#alphabet\n'e.S
     , <Br 'Path='e.Path> :
     , <Br 'C='e.C> :
     , <Br 'P='e.P> :
     , <Br 'PP='e.PP> :
     , <Br 'S='e.S> :
     , e.Type : {
-        'n' = <LearnNeg e.S>;
-        e.Else = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
+        'n'
+        , <Oracle-IsNEG '1'> :
+        , <Prout 'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S> :
+        = <Close 1><LearnNeg e.S>;
+        s.else
+        , <Oracle-IsNEG '0'> :
+        , <ReadInput 1> : '#split\n'e.w1'\n'e.w2'\n'e.w3'\n'e.w4'\n'e.w5'\n'
+        , <Prout
+        'Type is 'e.Type' with [C, P, PP: 'e.C' 'e.P' 'e.PP'] on 'e.S
+        '\nw1 = 'e.w1'\nw2 = 'e.w2'\nw3 = 'e.w3'\nw4 = 'e.w4'\nw5 = 'e.w5> :
+        , <Close 1> :
+        = <GetLang e.Type (e.w1)(e.w2)(e.w3)(e.w4)(e.w5)> ;
+
     };
 }
 
@@ -165,7 +169,7 @@ LearnS {
 
 LearnI {
     e.PP (e.Abt) (e.w1)(e.w2)(e.w4)(e.w5)
-    , <Oracle-SetPrf (e.w1)(e.w2)(e.w4)(e.w5)> :
+    , <Oracle-SetInf (e.w1)(e.w2)(e.w4)(e.w5)> :
 *    , <Prout '['LOG']' u is e.u> :
 *    , <Prout Learning on e.Abt> :
     , <ExdTable-Create e.Abt (<Cp 'Path'>)> : t.ExdTable
@@ -199,9 +203,9 @@ LStarLoop {
     t.ExdTable (N)
     , <ExdTable-IsConsist t.ExdTable> : e.ConS t.ExdTable^
     , <ExdTable-IsClosed t.ExdTable> : e.CloS t.ExdTable^
-*    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
-*    , <ExdTable-Print t.ExdTable> :
-*    , <Prout <Dup (0) (5) '#'>> :
+    , <Prout TableClosed e.CloS'\n'TableConsist e.ConS'\n'> :
+    , <ExdTable-Print t.ExdTable> :
+    , <Prout <Dup (0) (5) '#'>> :
     , e.ConS : {
         True
         , e.CloS : {
@@ -239,25 +243,21 @@ LStarTest {
 
     t.ExdTable (N)
     , <ExdTable-DFASize t.ExdTable> : e.Size (e.T1Rows) (e.States) e.StatesEnum
-*    , <Prout (e.Size) <Cp 'THold'> <Type e.Size> <Type <Cp 'THold'>> >:
-    , <Compare (e.Size) <Cp 'THold'>>: {
-        '-'
-        , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
-        , <Putout 3 e.DFA> :
-        , <Open 'w' 3 'fsm.txt'> :
+    , <ExdTable-ToDFA t.ExdTable (e.T1Rows) (e.States) e.StatesEnum> : e.DFA
+    , <Open 'w' 3 'fsm.txt'> :
+    , <Putout 3 e.DFA> :
+
 *        , <Prout 'BUILD AUTOMATA' e.DFA> :
-        , <Close 3> :
-        , <NOracle-EQUIVALENCE (<Cp 'P'>) 10> : {
-            True = t.ExdTable;
+    , <Close 3> :
+    , <NOracle-EQUIVALENCE (<Cp 'P'>) 10> : {
+        True = t.ExdTable;
 *            <Prout success> t.ExdTable;
-            False e.Counter (s.Actual) =
+        False e.Counter (s.Actual) =
 *            <Prout INSERTING e.Counter' 'with (s.Actual)>
-             <LStarLoop
-                <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
-        };
-        e.ge = fail;
-*         <Prout FAILED>fail;
+         <LStarLoop
+            <ExdTable-Insert t.ExdTable (counter) (s.Actual) e.Counter>>;
     };
+
 }
 
 
@@ -274,9 +274,16 @@ SubSS {
 ReadInput {
     s.Stream
     , <Get s.Stream> : {
+        '#alphabet' = '#alphabet\n'<ReadInput s.Stream (1)>;
         0 = ;
          = ' \n'<ReadInput s.Stream>;
         e.Line 0 = e.Line;
         e.Line = e.Line'\n'<ReadInput s.Stream>;
     };
+
+    s.Stream (1)
+    = <Get s.Stream>;
 }
+
+
+

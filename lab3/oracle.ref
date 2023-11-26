@@ -80,9 +80,18 @@ $ENTRY Oracle-MEMBER {
            'false' = <Close 2>0;
         };
         '0'
-         , <Oracle-FMEM e.w> : {
+         , <Cp 'Type'> : {
+            'i' = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w>;
+            'p'
+             , <Oracle-FMEM e.w> : {
              'true' = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w>;
              'false' = 0;
+             };
+             's'
+             , <Oracle-FMEM e.w> : {
+             'true' = <RepMember (<Cp 'Type'>) (0) (<Numb <Cp 'PP'>>) e.w>;
+             'false' = 0;
+             };
          };
     };
 }

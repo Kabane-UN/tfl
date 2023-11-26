@@ -1,1 +1,1 @@
-println(occursin(r"^(a*)(b*)c+\2\1$", ARGS[1]))
+isempty(ARGS) ? println(occursin(r"^(a*)(b*)c\2(a*)$", "")) : println(occursin(r"^(a*)(b*)c\2(a*)$", ARGS[1]))

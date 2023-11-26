@@ -1,8 +1,17 @@
 -- Prefix
-ø
+#states
+1
+#initial
+0
+#accepting
+0
+#alphabet
+a
+#transitions
+0:a>0
 -- Infix
 #states
-2
+3
 #initial
 0
 #accepting
@@ -11,6 +20,16 @@
 c
 #transitions
 0:c>1
-1:c>1
+1:c>2
+2:c>2
 -- Postfix
-ø
+#states
+1
+#initial
+0
+#accepting
+0
+#alphabet
+a
+#transitions
+0:a>0

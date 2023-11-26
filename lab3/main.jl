@@ -468,6 +468,7 @@ begin
     input_lines = read_from_file(imput)
     oracle, C, P, P1, alphabet, word, _ = parse_inputs(input_lines)
     regex = Regex(oracle[1])
+    println("Проверяем накачку")
     for i in 0:P1-1
         s = word[1]*word[2]^i*word[3]*word[4]^i*word[5]
         result = occursin(regex, s)
@@ -478,17 +479,21 @@ begin
     end
     write_to_file("oracle.jl", gen_oracle(oracle[2]))
     write_to_file("com.txt", gen_com("oracle.jl", "p", C, P, P1, alphabet, word))
+    println("Выводим префикс")
     @run_l_star
     lp = parse_fsm(read_from_file("com.txt"))
     write_to_file("oracle.jl", gen_oracle(oracle[3]))
     write_to_file("com.txt", gen_com("oracle.jl", "s", C, P, P1, alphabet, word))
+    println("Выводим суффикс")
     @run_l_star
     ls = parse_fsm(read_from_file("com.txt"))
     write_to_file("oracle.jl", gen_oracle(oracle[1]))
     write_to_file("com.txt", gen_com("oracle.jl", "i", C, P, P1, alphabet, word))
+    println("Выводим середину")
     @run_l_star
     li = parse_fsm(read_from_file("com.txt"))
     counterexamples = []
+    println("Проверяем на совместность")
     len_lp = length(lp.tramsitions)
     len_ls = length(ls.tramsitions)
     for _ in 1:(C + len_lp + len_ls)*3
@@ -512,19 +517,23 @@ begin
         write_to_file("ls.txt", Fsm_to_string(ls))
         write_to_file("instructions.txt", gen_instructions(oracle[1], C+len_lp, P, P1, alphabet, word, "p"))
         write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C+len_lp, P, P1, alphabet))
+        println("Выводим совместные префиксы")
         @run_l_star
         not_lp = parse_Short_fsm(read_from_file("com.txt"))
         write_to_file("instructions.txt", gen_instructions(oracle[1], C+len_ls, P, P1, alphabet, word, "s"))
         write_to_file("com.txt", gen_com("custom_oracle.jl", "n", C+len_ls, P, P1, alphabet))
+        println("Выводим совместные суффиксы")
         @run_l_star
         not_ls = parse_Short_fsm(read_from_file("com.txt"))
         lp = Fsm_to_Short_fsm(lp)
         ls = Fsm_to_Short_fsm(ls)
+        println("Первесекаем")
         res = "-- Prefix\n$(gen_result(lp, not_lp))\n-- Infix\n$(Fsm_to_string(li))\n-- Postfix\n$(gen_result(ls, not_ls))"
     else
         global res
         res = "-- Prefix\n$(Fsm_to_string(lp))\n-- Infix\n$(Fsm_to_string(li))\n-- Postfix\n$(Fsm_to_string(ls))"
     end
     @label ex
+    println("Готово")
     write_to_file(output, res)
 end

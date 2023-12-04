@@ -432,6 +432,7 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
             current_char = "_"
         end
         if panic
+            # TODO REFAL
             state = stack[end]
             get = []
             for nterm ∈ [rule.left for rule ∈ states[state]]
@@ -450,6 +451,7 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
                     right = sort([rule.right[begin:findfirst(x -> x == ".", rule.right)-1] for rule ∈ filter(x -> x.left == get[end], states[state])], by=length)
                     used = Rule(get[end], right[end])
                 end
+                # TODO Это я сам
                 for _ ∈ used.right
                     pop!(stack)
                 end
@@ -485,6 +487,7 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
         end
     end
 end
+# TODO REFAL
 function is_srl_one(states, follow_set, terms)
     for state in states
         for i in 1:length(state)-1

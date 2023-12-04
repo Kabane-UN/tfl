@@ -32,6 +32,84 @@ struct Todo
     type
     data
 end
+function grammar_print(grammer)
+    res = ""
+    for rule ∈ grammer
+        res *= rule.left*" ➡ "*join(rule.right)*"\n"
+    end
+    return res
+end
+function states_print(states)
+    res = ""
+    for (i, state) in enumerate(states)
+        res *= "#State = $i\n"
+        res *= "#begin\n"
+        res *= grammar_print(state)
+        res *= "#end\n"
+    end
+    return res
+end
+function gen_com_for_is_srl(states)
+    return "#for\ni\n#states\n"*states_print(states)
+end
+function gen_com_for_panic(arrow, line, counter, str, state, paths, follow_set)
+    res = "#for\np\n#arrow\n"*string(arrow)*"\n"*"#line\n"*string(line)*"\n"*"#counter\n"*string(counter)*"\n"*"#string\n"*str*"\n"
+    res *= "#state\n"*grammar_print(state)*"#paths\n"
+    for path in paths
+        res *= "#begin\n"
+        for nterm ∈ path
+            res *= nterm*"\n"
+        end
+        res *= "#end\n"
+    end
+    res *= "#follow\n"
+    for nterm ∈ keys(follow_set)
+        res *= "#Nterm = $nterm\n"
+        res *= "#begin\n"
+        for terms ∈ follow_set[nterm]
+            res *= terms*"\n"
+        end
+        res *= "#end\n"
+    end
+    return res
+end
+function parse_com_is_srt(lines)
+    return parse(Bool, lines[begin])
+end
+function parse_com_for_panic(lines)
+    flag = C_NULL
+    arrow = C_NULL
+    lin = C_NULL
+    count = C_NULL
+    nterm = C_NULL
+    drop = C_NULL
+    for line ∈ lines
+        if line == "#arrow"
+            flag = "arrow"
+        elseif line == "#line"
+            flag = "line"
+        elseif line == "#counter"
+            flag = "counter"
+        elseif line == "#nterm"
+            flag = "nterm"
+        elseif line == "#drop"
+            flag = "drop"
+        else
+            if flag == "arrow"
+                arrow = parse(Int, line)
+            elseif flag == "line"
+                lin = parse(Int, line)
+            elseif flag == "counter"
+                count = parse(Int, line)
+            elseif flag == "nterm"
+                nterm = line
+            elseif flag == "drop"
+                drop = parse(Int, line)
+            end
+        end
+    end
+    return arrow, lin, count, nterm, drop
+end
 function parse_input(lines)
     priority = false
     flag = C_NULL
@@ -90,11 +168,6 @@ function parse_grammar(lines)
     grammer[new_start_nterm] = [[start_nterm]]
     return Grammer(grammer, new_start_nterm, nterms, terms), grammer¹
 end
-function grammar_print(grammer)
-    for rule ∈ grammer
-        println(rule.left*" ➡ "*join(rule.right))
-    end
-end
 function compare_rules(rule¹, rule²)
     if rule¹.left != rule².left || rule¹.right != rule².right
         return false
@@ -114,12 +187,7 @@ function compare_states(state¹, state²)
         return true
     end
 end
-function states_print(states)
-    for (i, state) in enumerate(states)
-        println("State = I$i")
-        grammar_print(state)
-    end
-end
+
 function gotos_print(gotos)
     for key in sort(collect(keys(gotos)), by=x -> x[1])
         println("GOTO(I$(key[1]), $(key[2])) ➡ I$(gotos[key])")
@@ -166,19 +234,19 @@ function compute_order(grammar)
     paths = compute_order¹(grammar, [grammar.start_nterm], grammar.start_nterm)
     paths = [[[grammar.start_nterm]; path] for path ∈ paths]
     unique!(paths)
-    # TODO REFAL
-    function is_older(nterm¹, nterm²)
-        for path ∈ paths
-            if nterm² ∈ path
-                nterm_index = findfirst(x -> x == nterm², path)
-                if nterm¹ ∉ path[begin:nterm_index]
-                    return false
-                end
-            end
-        end
-        return true
-    end
-    return is_older
+    # TODO Vlad
+    # function is_older(nterm¹, nterm²)
+    #     for path ∈ paths
+    #         if nterm² ∈ path
+    #             nterm_index = findfirst(x -> x == nterm², path)
+    #             if nterm¹ ∉ path[begin:nterm_index]
+    #                 return false
+    #             end
+    #         end
+    #     end
+    #     return true
+    # end
+    return paths
 end
 
 function find_closure(state, nterm, grammar, start_nterm)
@@ -403,20 +471,20 @@ function gen_table(states, gotos, terms, nterms, grammar¹, follow_set)
     end
     return parse_table
 end
-# TODO REFAL
-function bubble_sort(vector, is_older)
-    swapped = true
-    while swapped
-        swapped = false
-        for i in 1:length(vector)-1
-            if is_older(vector[i], vector[i + 1])
-                vector[i], vector[i + 1] = vector[i + 1], vector[i]
-                swapped = true
-            end
-        end
-    end
-end
-function parse_string(str, parse_table, states, grammar¹, is_older, grammar, follow_set, priority)
+# TODO Vlad
+# function bubble_sort(vector, is_older)
+#     swapped = true
+#     while swapped
+#         swapped = false
+#         for i in 1:length(vector)-1
+#             if is_older(vector[i], vector[i + 1])
+#                 vector[i], vector[i + 1] = vector[i + 1], vector[i]
+#                 swapped = true
+#             end
+#         end
+#     end
+# end
+function parse_string(str, parse_table, states, grammar¹, paths, grammar, follow_set, priority)
     str *= "Δ"
     stack = []
     push!(stack, 1)
@@ -433,41 +501,51 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
         if current_char == " "
             current_char = "_"
         end
-        if panic
-            # TODO REFAL
-            state = stack[end]
-            get = []
-            for nterm ∈ [rule.left for rule ∈ states[state]]
-                if current_char ∈ follow_set[nterm]
-                    push!(get, nterm)
-                end
-            end
-            unique!(get)
-            if !isempty(get)
-                bubble_sort(get, is_older)
-                used = C_NULL
-                if priority
-                    right = sort([rule.right[begin:findfirst(x -> x == ".", rule.right)-1] for rule ∈ filter(x -> x.left == get[begin], states[state])], by=length)
-                    used = Rule(get[begin], right[begin])
-                else
-                    right = sort([rule.right[begin:findfirst(x -> x == ".", rule.right)-1] for rule ∈ filter(x -> x.left == get[end], states[state])], by=length)
-                    used = Rule(get[end], right[end])
-                end
-                # TODO Это я сам
-                for _ ∈ used.right
-                    pop!(stack)
-                end
-                state¹ = stack[end]
-                push!(stack, parse_table.table[state¹][findfirst(x -> x == used.left, parse_table.cols)].data)
-                panic = false
-                continue
-            end
+        if false
+            # TODO Vlad
+            # state = stack[end]
+            # get = []
+            # for nterm ∈ [rule.left for rule ∈ states[state]]
+            #     if current_char ∈ follow_set[nterm]
+            #         push!(get, nterm)
+            #     end
+            # end
+            # unique!(get)
+            # if !isempty(get)
+            #     bubble_sort(get, is_older)
+            #     used = C_NULL
+            #     if priority
+            #         right = sort([rule.right[begin:findfirst(x -> x == ".", rule.right)-1] for rule ∈ filter(x -> x.left == get[begin], states[state])], by=length)
+            #         used = Rule(get[begin], right[begin])
+            #     else
+            #         right = sort([rule.right[begin:findfirst(x -> x == ".", rule.right)-1] for rule ∈ filter(x -> x.left == get[end], states[state])], by=length)
+            #         used = Rule(get[end], right[end])
+            #     end
+            #     TODO I is my part
+            #     for _ ∈ used.right
+            #         pop!(stack)
+            #     end
+            #     state¹ = stack[end]
+            #     push!(stack, parse_table.table[state¹][findfirst(x -> x == used.left, parse_table.cols)].data)
+            #     panic = false
+            #     continue
+            # end
         else
             state = stack[end]
             todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count)")
-                panic = true
+                write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set))
+                @run_ref
+                arrow, line, count, nterm, drop = parse_com_for_panic(read_from_file("com.txt"))
+                for _ ∈ 1:drop
+                    pop!(stack)
+                end
+                state¹ = stack[end]
+                push!(stack, parse_table.table[state¹][findfirst(x -> x == nterm, parse_table.cols)].data)
+                panic = false
+                continue
+
             elseif todo.type == "Shift"
                 push!(stack, todo.data)
             elseif todo.type == "Accept"
@@ -489,48 +567,55 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
         end
     end
 end
-# TODO REFAL
-function is_srl_one(states, follow_set, terms)
-    for state in states
-        for i in 1:length(state)-1
-            for j in i+1:length(state)
-                dot_index¹ = findfirst(x-> x == ".", state[i].right)
-                dot_index² = findfirst(x-> x == ".", state[j].right)
-                if state[i].right[end] == "."
-                    if state[j].right[end] == "."
-                        if !isempty(follow_set[state[i].left] ∩ follow_set[state[j].left])
-                            return false
-                        end
-                    elseif state[j].right[dot_index²+1] ∈ terms
-                        if state[j].right[dot_index²+1] ∈ follow_set[state[i].left]
-                            return false
-                        end
-                    end
-                else
-                   if state[j].right[end] == "." && state[i].right[dot_index¹+1] ∈ terms
-                        if state[i].right[dot_index¹+1] ∈ follow_set[state[j].left]
-                            return false
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return true
+# TODO Vlad
+# function is_srl_one(states, follow_set, terms)
+#     for state in states
+#         for i in 1:length(state)-1
+#             for j in i+1:length(state)
+#                 dot_index¹ = findfirst(x-> x == ".", state[i].right)
+#                 dot_index² = findfirst(x-> x == ".", state[j].right)
+#                 if state[i].right[end] == "."
+#                     if state[j].right[end] == "."
+#                         if !isempty(follow_set[state[i].left] ∩ follow_set[state[j].left])
+#                             return false
+#                         end
+#                     elseif state[j].right[dot_index²+1] ∈ terms
+#                         if state[j].right[dot_index²+1] ∈ follow_set[state[i].left]
+#                             return false
+#                         end
+#                     end
+#                 else
+#                    if state[j].right[end] == "." && state[i].right[dot_index¹+1] ∈ terms
+#                         if state[i].right[dot_index¹+1] ∈ follow_set[state[j].left]
+#                             return false
+#                         end
+#                     end
+#                 end
+#             end
+#         end
+#     end
+#     return true
+# end
+macro run_ref()
+    return :(Sys.iswindows() ? run(`main.exe ./com.txt ./com.txt`) : run(`./main ./com.txt ./com.txt`))
 end
 
 begin
     priority, str, grammar, grammar¹ = parse_input(read_from_file(ARGS[1]))
-    is_older = compute_order(grammar)
+    paths = compute_order(grammar)
     dot_grammar = [Rule(rule.left, [["."]; rule.right]) for rule ∈ grammar¹]
     states = []
     gotos = Dict()
     push!(states, find_closure(C_NULL, dot_grammar[1].left, dot_grammar, dot_grammar[1].left))
     gen_states!(states, gotos, dot_grammar[1].left, dot_grammar)
     follow_set = create_follow_set(grammar)
-    if is_srl_one(states, follow_set, grammar.terms)
+    write_to_file("com.txt", gen_com_for_is_srl(states))
+    @run_ref
+    is_srl = parse_com_is_srt(read_from_file("com.txt"))
+    println(parse_com_for_panic(read_from_file("com.txt")))
+    if is_srl
         table = gen_table(states, gotos, grammar.terms, grammar.nterms, grammar¹, follow_set)
-        parse_string(str, table, states, grammar¹, is_older, grammar, follow_set, priority)
+        parse_string(str, table, states, grammar¹, paths, grammar, follow_set, priority)
     else
         println("Грамматика не SRL(1)")
     end

@@ -1,0 +1,10 @@
+#arrow
+5
+#line
+1
+#counter
+0
+#nterm
+E
+#drop
+3

@@ -52,8 +52,8 @@ end
 function gen_com_for_is_srl(states)
     return "#for\ni\n#states\n"*states_print(states)
 end
-function gen_com_for_panic(arrow, line, counter, str, state, paths, follow_set)
-    res = "#for\np\n#arrow\n"*string(arrow)*"\n"*"#line\n"*string(line)*"\n"*"#counter\n"*string(counter)*"\n"*"#string\n"*str*"\n"
+function gen_com_for_panic(arrow, line, counter, str, state, paths, follow_set, priority)
+    res = "#for\np\n#priority\n$priority\n#arrow\n"*string(arrow)*"\n"*"#line\n"*string(line)*"\n"*"#counter\n"*string(counter)*"\n"*"#string\n"*str*"\n"
     res *= "#state\n"*grammar_print(state)*"#paths\n"
     for path in paths
         res *= "#begin\n"
@@ -484,6 +484,9 @@ end
 #         end
 #     end
 # end
+macro run_ref()
+    return :(Sys.iswindows() ? run(`main.exe ./com.txt ./com.txt`) : run(`./main ./com.txt ./com.txt`))
+end
 function parse_string(str, parse_table, states, grammar¹, paths, grammar, follow_set, priority)
     str *= "Δ"
     stack = []
@@ -535,7 +538,7 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
             todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count)")
-                write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set))
+                write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))
                 @run_ref
                 arrow, line, count, nterm, drop = parse_com_for_panic(read_from_file("com.txt"))
                 for _ ∈ 1:drop
@@ -596,11 +599,9 @@ end
 #     end
 #     return true
 # end
-macro run_ref()
-    return :(Sys.iswindows() ? run(`main.exe ./com.txt ./com.txt`) : run(`./main ./com.txt ./com.txt`))
-end
 
 begin
+    
     priority, str, grammar, grammar¹ = parse_input(read_from_file(ARGS[1]))
     paths = compute_order(grammar)
     dot_grammar = [Rule(rule.left, [["."]; rule.right]) for rule ∈ grammar¹]

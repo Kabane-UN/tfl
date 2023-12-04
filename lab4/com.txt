@@ -1,10 +1,97 @@
-#arrow
-5
-#line
-1
-#counter
-0
-#nterm
-E
-#drop
-3
+#for
+i
+#states
+#State = 1
+#begin
+S' ➡ .S
+S ➡ .E$E$
+E ➡ .E+T
+E ➡ .T
+T ➡ .T*F
+T ➡ .F
+F ➡ .(E)
+F ➡ .k
+#end
+#State = 2
+#begin
+S' ➡ S.
+#end
+#State = 3
+#begin
+S ➡ E.$E$
+E ➡ E.+T
+#end
+#State = 4
+#begin
+E ➡ T.
+T ➡ T.*F
+#end
+#State = 5
+#begin
+T ➡ F.
+#end
+#State = 6
+#begin
+F ➡ (.E)
+E ➡ .E+T
+E ➡ .T
+T ➡ .T*F
+T ➡ .F
+F ➡ .(E)
+F ➡ .k
+#end
+#State = 7
+#begin
+F ➡ k.
+#end
+#State = 8
+#begin
+S ➡ E$.E$
+E ➡ .E+T
+E ➡ .T
+T ➡ .T*F
+T ➡ .F
+F ➡ .(E)
+F ➡ .k
+#end
+#State = 9
+#begin
+E ➡ E+.T
+T ➡ .T*F
+T ➡ .F
+F ➡ .(E)
+F ➡ .k
+#end
+#State = 10
+#begin
+T ➡ T*.F
+F ➡ .(E)
+F ➡ .k
+#end
+#State = 11
+#begin
+F ➡ (E.)
+E ➡ E.+T
+#end
+#State = 12
+#begin
+S ➡ E$E.$
+E ➡ E.+T
+#end
+#State = 13
+#begin
+E ➡ E+T.
+T ➡ T.*F
+#end
+#State = 14
+#begin
+T ➡ T*F.
+#end
+#State = 15
+#begin
+F ➡ (E).
+#end
+#State = 16
+#begin
+S ➡ E$E$.
+#end

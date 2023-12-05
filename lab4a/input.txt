@@ -1,5 +1,5 @@
 #priority
-false
+true
 #string
 (k+)+k*k
 k

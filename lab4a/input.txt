@@ -5,7 +5,7 @@ false
 (k+k)+*k
 
 #grammer
-S ➡ E $ E $
+S ➡ E $ S | E $
 E ➡ E + T | T
 T ➡ T * F | F
 F ➡ ( E ) | k

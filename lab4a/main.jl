@@ -354,7 +354,7 @@ function gen_follow(nterm, grammar)
                             res = gen_follow(current, grammar)
                         end
                     end
-                    if res != false
+                    if res != false && res != C_NULL
                         for i ∈ res
                             push!(follow, i)
                         end

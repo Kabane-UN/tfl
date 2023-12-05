@@ -49,8 +49,18 @@ function states_print(states)
     end
     return res
 end
-function gen_com_for_is_srl(states)
-    return "#for\ni\n#states\n"*states_print(states)
+function gen_com_for_is_srl(states, follow_set)
+    res = "#for\ni\n#states\n"*states_print(states)
+    res *= "#follow\n"
+    for nterm ∈ keys(follow_set)
+        res *= "#Nterm = $nterm\n"
+        res *= "#begin\n"
+        for terms ∈ follow_set[nterm]
+            res *= terms*"\n"
+        end
+        res *= "#end\n"
+    end
+    return res
 end
 function gen_com_for_panic(arrow, line, counter, str, state, paths, follow_set, priority)
     res = "#for\np\n#priority\n$priority\n#arrow\n"*string(arrow)*"\n"*"#line\n"*string(line)*"\n"*"#counter\n"*string(counter)*"\n"*"#string\n"*str*"\n"
@@ -422,7 +432,7 @@ function gen_follow(nterm, grammar)
                             res = gen_follow(current, grammar)
                         end
                     end
-                    if res != false
+                    if res != false && res != C_NULL
                         for i ∈ res
                             push!(follow, i)
                         end
@@ -535,7 +545,10 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
             # end
         else
             state = stack[end]
-            todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
+            todo = Todo("Error", C_NULL)
+            if current_char ∈ parse_table.cols
+                todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
+            end
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count)")
                 write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))
@@ -610,7 +623,7 @@ begin
     push!(states, find_closure(C_NULL, dot_grammar[1].left, dot_grammar, dot_grammar[1].left))
     gen_states!(states, gotos, dot_grammar[1].left, dot_grammar)
     follow_set = create_follow_set(grammar)
-    write_to_file("com.txt", gen_com_for_is_srl(states))
+    write_to_file("com.txt", gen_com_for_is_srl(states, follow_set))
     @run_ref
     is_srl = parse_com_is_srt(read_from_file("com.txt"))
     println(parse_com_for_panic(read_from_file("com.txt")))

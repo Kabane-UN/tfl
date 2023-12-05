@@ -95,3 +95,32 @@ F ➡ (E).
 #begin
 S ➡ E$E$.
 #end
+#follow
+#Nterm = S'
+#begin
+Δ
+#end
+#Nterm = S
+#begin
+Δ
+#end
+#Nterm = T
+#begin
+*
++
+)
+$
+#end
+#Nterm = E
+#begin
++
+)
+$
+#end
+#Nterm = F
+#begin
+*
++
+)
+$
+#end

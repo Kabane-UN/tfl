@@ -464,7 +464,10 @@ function parse_string(str, parse_table, states, grammar¹, is_older, grammar, fo
             end
         else
             state = stack[end]
-            todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
+            todo = Todo("Error", C_NULL)
+            if current_char ∈ parse_table.cols
+                todo = parse_table.table[state][findfirst(x -> x == current_char, parse_table.cols)]
+            end
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count)")
                 panic = true

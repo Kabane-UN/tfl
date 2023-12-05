@@ -2,7 +2,10 @@
 false
 #string
 (k+)+k*k
-(k+k)+*k
+k
+k@k
+k + k
+(k+k)+*k(k+k)
 
 #grammer
 S ➡ E $ S | E $

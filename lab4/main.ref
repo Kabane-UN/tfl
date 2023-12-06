@@ -6,22 +6,62 @@ $EXTERN Set-Create, Set-Insert, Set-Isin, Set-ListInsert;
 $EXTERN List-Create, List-Insert, List-InitForEach, List-Append, List-AppendList, List-Get, List-ToJSON;
 $ENTRY GO {
     , <Open 'r' 1 <Arg 1>> :
-*    , <ReadLines 1> : '#for\n'e.Type'\n#states'e.Automata
-*    , <Close 1> :
-    , <Open 'r' 1 <Arg 2>> :
-    , <ReadLines 1 ('#states')> : '#for\n'e.Type
-    , <ParseAutomata 1> : t.Automata
-*    , <Close 1> :
-    , <ParseFollow 1> : t.Follow
-*    , <Prout t.List> :
-*    , <Prout <List-ToJSON t.Follow>> :
-*    , <Prout <List-ToJSON t.Automata>> :
-    , <Close 1> :
-    = <Prout <SLRCheck t.Automata t.Follow>>;
-*    , <SLRCheck e.Grammar> : {
-*        True = ;
-*        False = <Prout NOT SRL>;
-*    };
+    , <ReadLines 1 ('#priority')> : '#for\n'e.Type'\n'
+    , e.Type : {
+        'i'
+        , <ParseAutomata 1> : t.Automata
+        , <ParseFollow 1> : t.Follow
+        , <Close 1> :
+        , <Open 'w' 1 <Arg 2>> :
+        = <Putout 1 <SLRCheck t.Automata t.Follow>><Close 1>;
+        'p'
+        , <ReadLines 1 ('#state')> : e.Priority'\n#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'
+            e.Counter'\n#string\n'e.String
+        , <ParseSTerms 1> : t.Terms
+        , <Prout <List-ToJSON t.Terms>> :
+        , <ParsePaths 1> : t.Paths
+        , <Prout <List-ToJSON t.Paths>> :
+        = ;
+    };
+}
+
+GetAllOrders {
+    t.Paths () e.N
+    , <List-Get t.Paths e.N> : e.V
+}
+
+Order {
+    t.Paths (e.N1) e.N2
+}
+
+ParseSTerms {
+    s.Stream
+    , <List-Create> : t.States
+    = <ParseSTerms_ s.Stream t.States>;
+}
+
+ParseSTerms_ {
+    s.Stream t.States
+    , <Get s.Stream> : {
+        e.Term' ➡ 'e.Rule = <ParseSTerms_ s.Stream <List-Append t.States (e.Term) e.Rule>>;
+        '#paths' = t.States;
+    }
+}
+
+ParsePaths_ {
+    s.Stream t.Paths (e.N)
+    , <Get s.Stream> : {
+        '#begin' = <ParsePaths_ s.Stream t.Paths (e.N)>;
+        '#end' = <ParsePaths_ s.Stream t.Paths (<Add (e.N) 1>)>;
+        '#follow' = t.Paths;
+        e.Term = <ParsePaths_ s.Stream <List-Append t.Paths (e.N) e.Term> (e.N)>;
+    };
+}
+
+ParsePaths {
+    s.Stream
+    , <List-Create> : t.Paths
+    = <ParsePaths_ s.Stream t.Paths (0)>;
 }
 
 ParseState {
@@ -86,7 +126,7 @@ FindSRConflict {
 *    , <Prout FOLLOW FOR (e.T1) IS e.F> :
     , <IsIn (e.F) s.X> : {
         True = True;
-        False = <Prout s.X NOT FOUND IN (e.F)><FindSRConflict t.Follow (s.a) (s.X) e.VE>;
+        False = <FindSRConflict t.Follow (s.a) (s.X) e.VE>;
     };
     t.Automata (s.a) (s.X) e.V
     = False;
@@ -213,8 +253,8 @@ SLRCheck {
         True = False;
         False
         , <ReduceReduce t.Automata t.Follow 1> : {
-            True = False;
-            False = True;
+            True = false;
+            False = true;
         };
     };
 }

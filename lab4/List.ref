@@ -1,0 +1,40 @@
+$ENUM List;
+
+$ENTRY List-Create {
+    = [List ()];
+}
+
+$ENTRY List-Append {
+    [List (e.L-B ((e.K) (e.V)) e.L-E)] (e.K) e.NewV
+    = [List (e.L-B ((e.K) (e.V (e.NewV)) ) e.L-E)];
+    [List (e.L)] (e.NewK) e.NewV
+    = [List (e.L ((e.NewK) ((e.NewV)) ))];
+}
+
+$ENTRY List-AppendList {
+    [List (e.L ((e.K) (e.KV)))] (e.K) e.L
+    = [List (e.L ((e.K) (e.KV e.L)))] (e.K) e.L;
+
+    [List (e.L)] (e.K) e.KL
+    = [List (e.L ((e.K) (e.KL)))];
+    [List (e.L)] e.Else = <Prout ERR e.Else><Exit 0>;
+}
+
+$ENTRY List-ToJSON {
+    [List ()] = ;
+    [List (((e.K) (e.V)) e.L)]
+    = '\"'e.K'\" : {\n\t'e.V'\n}\n'<List-ToJSON [List (e.L)]>;
+}
+
+$ENTRY List-InitForEach {
+    [List (e.V)] (/*empty*/) = [List (e.V)];
+    [List ()] ((e.K)e.List)
+    = <List-InitForEach [List ( ((e.K) 0) )] (e.List)>;
+}
+
+$ENTRY List-Get {
+    [List (e.LB((e.K) (e.V)) e.LE)] e.K = e.V;
+
+    [List (e.L)] e.K = ;
+}
+

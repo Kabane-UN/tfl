@@ -1,0 +1,352 @@
+*$FROM LibraryEx
+$EXTERN Map;
+*$FROM Set
+$EXTERN Set-Create, Set-Insert, Set-Isin, Set-ListInsert;
+*$FROM List
+$EXTERN List-Create, List-Insert, List-InitForEach, List-Append, List-AppendList, List-Get, List-ToJSON;
+$ENTRY GO {
+    , <Open 'r' 1 <Arg 1>> :
+*    , <ReadLines 1> : '#for\n'e.Type'\n#states'e.Automata
+*    , <Close 1> :
+    , <Open 'r' 1 <Arg 2>> :
+    , <ReadLines 1 ('#states')> : '#for\n'e.Type
+    , <ParseAutomata 1> : t.Automata
+*    , <Close 1> :
+    , <ParseFollow 1> : t.Follow
+*    , <Prout t.List> :
+*    , <Prout <List-ToJSON t.Follow>> :
+*    , <Prout <List-ToJSON t.Automata>> :
+    , <Close 1> :
+    = <Prout <SLRCheck t.Automata t.Follow>>;
+*    , <SLRCheck e.Grammar> : {
+*        True = ;
+*        False = <Prout NOT SRL>;
+*    };
+}
+
+ParseState {
+    (e.N) s.Stream t.List
+    , <Get s.Stream> : {
+        '#end' = t.List;
+        e.Rule = <ParseState (e.N) s.Stream <List-Append t.List (e.N) e.Rule>>;
+    };
+}
+
+ParseAutomata_ {
+    s.Stream t.List
+    , <Get s.Stream> :  {
+        '#State = 'e.N
+        , <Get s.Stream> : e.Begin
+        = <ParseAutomata_ s.Stream <ParseState (e.N) s.Stream t.List>>;
+        '#follow' = t.List;
+    };
+}
+
+ParseAutomata {
+    s.Stream
+    , <List-Create> : t.List
+    = <ParseAutomata_ s.Stream t.List>;
+}
+
+ParseFTerm {
+    s.Stream t.List (e.T)
+    , <Get s.Stream> : {
+        '#end' = t.List;
+        e.F = <ParseFTerm s.Stream <List-Append t.List (e.T) e.F> (e.T)>;
+    };
+}
+
+ParseFollow_ {
+    s.Stream t.List
+    , <Get s.Stream> : {
+        '#Nterm = 'e.T
+        , <Get s.Stream> : e.Begin
+        , <ParseFTerm s.Stream t.List (e.T)> : t.List^
+        = <ParseFollow_ s.Stream t.List>;
+        0 = t.List;
+        e.Else = <Prout e.Else><Exit 0>;
+    };
+}
+
+ParseFollow {
+    s.Stream
+    , <List-Create> : t.List
+    = <ParseFollow_ s.Stream t.List>;
+}
+
+IsIn {
+    (e.LB (e.X) e.LE) e.X = True;
+    e.Else = False
+}
+
+FindSRConflict {
+    t.Follow (s.a) (s.X) e.VB (e.T1' ➡ 'e.a s.a'.') e.VE
+*    , <Prout MAYBE FOR (s.a) (X s.X)> :
+    , <List-Get t.Follow e.T1> : e.F
+*    , <Prout FOLLOW FOR (e.T1) IS e.F> :
+    , <IsIn (e.F) s.X> : {
+        True = True;
+        False = <Prout s.X NOT FOUND IN (e.F)><FindSRConflict t.Follow (s.a) (s.X) e.VE>;
+    };
+    t.Automata (s.a) (s.X) e.V
+    = False;
+*    = <Prout NOT FOUND FOR (s.a) (s.X) IN e.V>False;
+}
+
+IsChar {
+    s.A
+    , <Compare (<Ord s.A>) <Ord 'Z'>> : {
+        '-'
+        , <Compare (<Ord s.A>) <Ord 'A'>> : {
+            '-' = <IsChar (1)>;
+            s.E = True;
+        };
+        s.E = <IsChar s.A (1)>;
+    };
+    s.A (1)
+    , <Compare (<Ord s.A>) <Ord 'z'>> : {
+        '-'
+        , <Compare (<Ord s.A>) <Ord 'a'>> : {
+            '-' = False;
+            s.E = True;
+        };
+        s.E = False;
+    };
+}
+
+Unicode {
+    s.S1 s.S2 s.S3
+    , <Map &IsChar s.S1 s.S2 s.S3> : {
+        True True True = False;
+        e.Else = True;
+    }
+}
+
+ShiftReduceState {
+    t.Follow e.VB (e.T1' ➡ 'e.a s.a'.'s.X e.b) e.VE
+*    , <Prout (e.T1' ➡ 'e.a s.a'.'s.X e.b) (s.X) (e.b)> :
+    , <IsNTerm s.X> : {
+        True = <ShiftReduceState t.Follow e.VE>;
+        False
+*        , <Prout RUN FOR s.X> :
+        , <FindSRConflict t.Follow (s.a) (s.X) e.VB e.VE> : {
+            True = True;
+            False = <ShiftReduceState t.Follow e.VE>;
+        };
+    };
+    t.Follow e.Else
+    = False;
+*    = <Prout NOT FOUND (e.Else)>False;
+}
+
+ShiftReduce {
+    t.Automata t.Follow e.N
+    , <List-Get t.Automata <Symb e.N>> : {
+        /*empty*/ = False;
+        e.V
+*        , <Prout (e.N) (e.V)> :
+        , <ShiftReduceState t.Follow e.V> : {
+            True = True;
+            False = <ShiftReduce t.Automata t.Follow <Add (e.N) 1>>;
+        };
+    };
+}
+
+IsNTerm {
+    s.A
+    , <Compare (<Ord s.A>) <Ord 'Z'>> : {
+        '-'
+        , <Compare (<Ord s.A>) <Ord 'A'>> : {
+            '-' = False;
+            s.E = True;
+        };
+        s.E = False;
+    };
+    e.T = True; /*eps?*/
+}
+
+Intersection {
+    (e.TB(e.T)e.TE) e.TBB e.T e.TEE
+    = True;
+    (e.T1) e.T2
+    = False;
+}
+
+FindRRConflict {
+    t.Follow (e.A) e.VB (e.B' ➡ 'e.bb'.') e.VE
+    , <List-Get t.Follow e.A> : e.AF
+    , <List-Get t.Follow e.B> : e.BF
+    , <Intersection (e.AF) e.BF> : {
+        True = True;
+        False = <FindRRConflict t.Follow (e.A) e.VE>;
+    };
+    t.Follow (e.A) e.Else
+    = False;
+}
+
+ReduceReduceState {
+    t.Follow e.VB (e.A' ➡ 'e.aa'.') e.VE
+    , <FindRRConflict t.Follow (e.A) e.VE> : {
+        True = True;
+        False = <ShiftReduceState t.Follow e.VE>;
+    };
+    t.Follow e.Else
+    = False;
+}
+
+ReduceReduce {
+    t.Automata t.Follow e.N
+    , <List-Get t.Automata <Symb e.N>> : {
+        /*empty*/ = False;
+        e.V
+        , <ReduceReduceState t.Follow e.V> : {
+            True = True;
+            False = <ReduceReduce t.Automata t.Follow <Add (e.N) 1>>;
+        };
+    };
+    e.Else = ;
+}
+
+SLRCheck {
+    t.Automata t.Follow
+    , <ShiftReduce t.Automata t.Follow 1> : {
+        True = False;
+        False
+        , <ReduceReduce t.Automata t.Follow 1> : {
+            True = False;
+            False = True;
+        };
+    };
+}
+
+ReadLines {
+    s.Stream (e.Stop)
+    , <Get s.Stream> : {
+        e.Line 0 = e.Line;
+        e.Stop = ;
+        e.Line = e.Line'\n'<ReadLines s.Stream (e.Stop)>;
+    }
+}
+
+
+/* на всякий случай (все в этой лабе будет переписываться! и снова переписываться! больше кода!)
+DropNotInSet {
+    (t.Set) (e.Parsed) s.T' ➡ 'e.Rule'\n'e.Grammar
+*    , <Prout PARSED'\n'e.Parsed'\nEND '(s.T)> :
+    , <Map {
+        s.A
+        , <IsNTerm s.A> : {
+            True = <Set-Isin t.Set s.A>;
+            False = ;
+        };
+    } e.Rule> : {
+        e.B False e.E = <DropNotInSet (t.Set) (e.Parsed) e.Grammar>;
+        e.E = <DropNotInSet (t.Set) (e.Parsed s.T' ➡ 'e.Rule) e.Grammar>;
+    };
+    (t.Set) (e.Parsed) s.T' ➡ 'e.Rule
+    , <Map {
+        s.A
+        , <IsNTerm s.A> : {
+            True = <Set-Isin t.Set s.A>;
+            False = ;
+        };
+    } e.Rule> : {
+        e.B False e.E = e.Parsed;
+        e.E = e.Parsed'\n's.T' ➡ 'e.Rule;
+    };
+
+}
+
+FindInstd {
+    (t.Set) s.T' ➡ 'e.Rule'\n'e.Grammar
+    , <Map {
+        s.C
+        , <IsNTerm s.C> : {
+            True = <Set-Isin t.Set s.C>;
+            False = ;
+        };
+    } e.Rule> : {
+        e.R-B False e.R-E = <FindInstd (t.Set) e.Grammar>;
+        e.True = <FindInstd (<Set-Insert t.Set s.T>) e.Grammar>;
+    };
+
+    (t.Set) s.T' ➡ 'e.Rule
+    , <Map {
+        s.C
+        , <IsNTerm s.C> : {
+            True = <Set-Isin t.Set s.C>;
+            False = ;
+        };
+    } e.Rule> : {
+        e.R-B False e.R-E = t.Set;
+        e.True = <Set-Insert t.Set s.T>;
+    };
+}
+
+DropUseless_ {
+    e.Grammar (t.Set)
+    = <FindInstd (t.Set) e.Grammar> : {
+        t.Set = t.Set;
+        t.NewSet = <Prout NSET t.NewSet><DropUseless_ e.Grammar (t.NewSet)>;
+    };
+}
+
+
+DropUseless {
+    e.Grammar
+    , <Set-Create> : t.Set
+    , <FindNonTerm e.Grammar> : e.NTerms
+    , <Prout NOT e.NTerms> :
+    , <Set-ListInsert t.Set (e.NTerms)> : t.Set^
+    , <Prout SET t.Set> :
+    , <DropUseless_ e.Grammar (t.Set)> : t.Set^
+    , <Prout SET t.Set> :
+    = <DropNotInSet (t.Set) () e.Grammar>;
+}
+
+FindNonTerm {
+    s.T' ➡ 'e.Rule'\n'e.Grammar
+*    , <Prout s.T> :
+    , <Map &IsNTerm e.Rule> : {
+        e.B True e.E = <FindNonTerm e.Grammar>;
+        e.E = (s.T)<FindNonTerm e.Grammar>;
+    };
+    s.T' ➡ 'e.Rule
+    , <Map &IsNTerm e.Rule> : {
+        e.B True e.E = ;
+        e.E = (s.T)
+    };
+}
+
+IsNTerm {
+    s.A
+    , <Compare (<Ord s.A>) <Ord 'Z'>> : {
+        '-'
+        , <Compare (<Ord s.A>) <Ord 'A'>> : {
+            '-' = False;
+            s.E = True;
+        };
+        s.E = False;
+    }
+}
+
+GetAllNTerm {
+    s.T' ➡ 'e.Rule'\n'e.Grammar
+    = (s.T)<GetAllNTerm e.Grammar>;
+    s.T' ➡ 'e.Rule
+    = (s.T);
+}
+
+FIRSTLoop {
+    (true) t.List (e.NTerms) e.Grammar
+
+}
+
+GetFIRST {
+    e.Grammar
+    , <List-Create> : t.List
+    , <GetAllNTerm e.Grammar> : e.NTerms
+    , <List-InitForEach t.List (e.NTerms)> : t.List^
+    = <FIRSTLoop (true) t.List (e.NTerms) e.Grammar>;
+}
+*/

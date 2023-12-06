@@ -368,19 +368,25 @@ function gen_states!(states, gotos, start_nterm, grammar)
         end
     end
 end
-function gen_first(rule, grammar)
+function gen_first(rule, grammar, marked)
     if !isempty(rule)
         if rule[1] ∈ grammar.terms
             return Set([rule[1]])
         elseif rule[1] == "ϵ"
             return Set(["ϵ"])
         end
-        if rule.left ∈ keys(grammar.grammar)
+        if rule[1] ∈ grammar.nterms
+            push!(marked, rule[1])
             res = Set()
-            symbols = grammar.grammar[rule.left]
-            for symbol ∈ symbols
-                for f_term ∈ gen_first(symbol, grammar)
-                    push!(res, f_term)
+            alter = grammar.grammar[rule[1]]
+            
+            for rule¹ ∈ alter
+                marked¹ = copy(marked)
+                if rule¹[1] ∉ marked¹
+                    first_for = gen_first(rule¹, grammar, marked¹)
+                    for f_term ∈ first_for
+                        push!(res, f_term)
+                    end
                 end
             end
             if "ϵ" ∉ res
@@ -389,13 +395,16 @@ function gen_first(rule, grammar)
                 new_res = Set()
                 filter!(x -> x != "ϵ", res)
                 if length(rule) > 1
-                    new_first = first(rule[2:end])
-                    if new_first != false
-                        new_res = res ∪ new_first
-                    else
-                        new_res = Set(res)
+                    marked¹ = copy(marked)
+                    if rule[2:end] ∉ marked¹
+                        new_first = first(rule[2:end])
+                        if new_first != false
+                            new_res = res ∪ new_first
+                        else
+                            new_res = Set(res)
+                        end
+                        return new_res
                     end
-                    return new_res
                 end
                 push!(res, "ϵ")
                 return res
@@ -421,7 +430,7 @@ function gen_follow(nterm, grammar)
                     sub_rule = sub_rule[nterm_index+1:end]
                     res = C_NULL
                     if !isempty(sub_rule)
-                        res = gen_first(sub_rule, grammar)
+                        res = gen_first(sub_rule, grammar, [])
                         if "ϵ" ∈ res
                             filter!(x -> x != "ϵ", res)
                             current_follow = gen_follow(current, grammar)

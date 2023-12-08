@@ -66,7 +66,7 @@ PanicRead {
     = <Prout 'Is it possible?'><Exit 1>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) 'Δ\n'
     , <Prout delta> :
-    = <WriteResults (<Add (<Cp 'StrLen'>) 1>) (e.Line) (e.Counter) (0) 0>;
+    = <WriteResults (e.Arrow) (e.Line) (e.Counter) (0) 0>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
 *    , <Prout NEWLINE > :
     = <PanicRead t.Follow t.Terms

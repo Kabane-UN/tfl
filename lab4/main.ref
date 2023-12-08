@@ -1,9 +1,8 @@
 *$FROM LibraryEx
-$EXTERN Map;
-*$FROM Set
-$EXTERN Set-Create, Set-Insert, Set-Isin, Set-ListInsert;
+$EXTERN Map, Reduce;
 *$FROM List
-$EXTERN List-Create, List-Insert, List-InitForEach, List-Append, List-AppendList, List-Get, List-ToJSON;
+$EXTERN List-Create, List-Insert, List-InitForEach,
+List-Append, List-AppendList, List-Get, List-ToJSON, List-Keys, List-WhereIn;
 $ENTRY GO {
     , <Open 'r' 1 <Arg 1>> :
     , <ReadLines 1 ('#priority')> : '#for\n'e.Type'\n'
@@ -17,21 +16,99 @@ $ENTRY GO {
         'p'
         , <ReadLines 1 ('#state')> : e.Priority'\n#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'
             e.Counter'\n#string\n'e.String
+        , e.Priority : {
+            'true' = <Br '<=>'><Br '>=<'>;
+            'false' = <Br '<=<'><Br '>=>'>;
+        } :
         , <ParseSTerms 1> : t.Terms
-        , <Prout <List-ToJSON t.Terms>> :
+*        , <Prout <List-ToJSON t.Terms>> :
         , <ParsePaths 1> : t.Paths
-        , <Prout <List-ToJSON t.Paths>> :
+*        , <Prout <List-ToJSON t.Paths>> :
+        , <ParseFollow 1> : t.Follow
+        , <Br 'Paths='t.Paths> :
+        , <Br 'OrdTerms='<Sort <List-Keys t.Terms>>> :
+        , <PanicRead t.Follow (<Numb e.Arrow>) (<Numb e.Line>) (<Numb e.Counter>) e.String> :
         = ;
     };
 }
 
-GetAllOrders {
-    t.Paths () e.N
-    , <List-Get t.Paths e.N> : e.V
+PanicRead {
+    t.Follow (e.Arrow) (e.Line) (e.Counter) /*empty*/
+    = <Prout 'Is it possible?'><Exit 1>;
+    t.Follow (e.Arrow) (e.Line) (e.Counter) '\n' e.String
+    = <PanicRead t.Follow
+        (e.Arrow) (<Add (e.Line) 1>)
+        (<Sub (<Add (e.Counter) <Sub (e.Arrow) e.Counter>>) 1>) e.String>;
+    t.Follow (e.Arrow) (e.Line) (e.Counter) s.C1 s.C2 e.String
+    , <Unicode s.C1 s.C2> : {
+        True e.W
+        , e.String : {
+            s.C3 e.String
+            , <Unicode s.C1 s.C2 s.C3> : {
+                True e.W = <PanicRead (U e.W) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
+                False e.W = <PanicRead (U s.C1 s.C2) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
+            };
+            /*empty*/ =
+
+        };
+        False e.W = <PanicRead (NU s.C1) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
+    };
+
+    t.Follow (e.Arrow) (e.Line) (e.Counter) s.C e.String
+    , <IsFollow t.Follow s.C> : {
+        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
+    };
+
+    (U e.W) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String
+    , <IsFollow t.Follow e.W> : {
+        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
+    };
+
+    (NU s.C) t.Follow (e.Arrow) (e.Line) (e.Counter) s.C e.String
+    , <IsFollow t.Follow s.C> : {
+        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
+    };
+    e.Else = <Prout e.Else> <Exit 0 >;
+
 }
 
-Order {
-    t.Paths (e.N1) e.N2
+WriteResults {
+    (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len
+    , <Open 'w' 2 <Arg 2>> :
+    = <Putout '#arrow\n'<Symb e.Arrow>'\n#line\n'<Symb e.Line>'\n#counter\n'<Symb e.Counter>
+        '\n#nterm\n'<Symb e.T>'\n#drop\n'<Symb e.Len>><Close 2>;
+}
+
+OlderTerm {
+    e.TB e.T e.TE
+    , <Cp 'OrdTerms'> : e.T e.OTE
+    = e.T;
+}
+
+OlderRule {
+    (e.Max) (e.T1' ➡ 'e.a'.'e.b) e.Rules
+    , <Lenw e.a> : s.L e.a
+    , <Compare (e.Max) s.L> : {
+        '+' = <OlderRule (e.Max) e.Rules>;
+        e.le = <OlderRule (s.L) e.Rules>;
+    };
+}
+
+IsFollow {
+    t.Follow e.C
+    , <List-WhereIn t.Follow e.C> : {
+        /*empty*/
+*        , <Prout NOTHING (s.C) IN t.Follow> :
+        = ;
+        e.Terms
+        , <Print FOUND e.C IN e.Terms> :
+        , <OlderTerm e.Terms> : e.Term
+        , <List-Get t.Follow e.Term> : e.Rules
+        = <OlderRule (0) e.Rules>;
+    }
 }
 
 ParseSTerms {
@@ -131,35 +208,6 @@ FindSRConflict {
     t.Automata (s.a) (s.X) e.V
     = False;
 *    = <Prout NOT FOUND FOR (s.a) (s.X) IN e.V>False;
-}
-
-IsChar {
-    s.A
-    , <Compare (<Ord s.A>) <Ord 'Z'>> : {
-        '-'
-        , <Compare (<Ord s.A>) <Ord 'A'>> : {
-            '-' = <IsChar (1)>;
-            s.E = True;
-        };
-        s.E = <IsChar s.A (1)>;
-    };
-    s.A (1)
-    , <Compare (<Ord s.A>) <Ord 'z'>> : {
-        '-'
-        , <Compare (<Ord s.A>) <Ord 'a'>> : {
-            '-' = False;
-            s.E = True;
-        };
-        s.E = False;
-    };
-}
-
-Unicode {
-    s.S1 s.S2 s.S3
-    , <Map &IsChar s.S1 s.S2 s.S3> : {
-        True True True = False;
-        e.Else = True;
-    }
 }
 
 ShiftReduceState {
@@ -268,125 +316,47 @@ ReadLines {
     }
 }
 
-
-/* на всякий случай (все в этой лабе будет переписываться! и снова переписываться! больше кода!)
-DropNotInSet {
-    (t.Set) (e.Parsed) s.T' ➡ 'e.Rule'\n'e.Grammar
-*    , <Prout PARSED'\n'e.Parsed'\nEND '(s.T)> :
-    , <Map {
-        s.A
-        , <IsNTerm s.A> : {
-            True = <Set-Isin t.Set s.A>;
-            False = ;
-        };
-    } e.Rule> : {
-        e.B False e.E = <DropNotInSet (t.Set) (e.Parsed) e.Grammar>;
-        e.E = <DropNotInSet (t.Set) (e.Parsed s.T' ➡ 'e.Rule) e.Grammar>;
-    };
-    (t.Set) (e.Parsed) s.T' ➡ 'e.Rule
-    , <Map {
-        s.A
-        , <IsNTerm s.A> : {
-            True = <Set-Isin t.Set s.A>;
-            False = ;
-        };
-    } e.Rule> : {
-        e.B False e.E = e.Parsed;
-        e.E = e.Parsed'\n's.T' ➡ 'e.Rule;
-    };
-
-}
-
-FindInstd {
-    (t.Set) s.T' ➡ 'e.Rule'\n'e.Grammar
-    , <Map {
-        s.C
-        , <IsNTerm s.C> : {
-            True = <Set-Isin t.Set s.C>;
-            False = ;
-        };
-    } e.Rule> : {
-        e.R-B False e.R-E = <FindInstd (t.Set) e.Grammar>;
-        e.True = <FindInstd (<Set-Insert t.Set s.T>) e.Grammar>;
-    };
-
-    (t.Set) s.T' ➡ 'e.Rule
-    , <Map {
-        s.C
-        , <IsNTerm s.C> : {
-            True = <Set-Isin t.Set s.C>;
-            False = ;
-        };
-    } e.Rule> : {
-        e.R-B False e.R-E = t.Set;
-        e.True = <Set-Insert t.Set s.T>;
-    };
-}
-
-DropUseless_ {
-    e.Grammar (t.Set)
-    = <FindInstd (t.Set) e.Grammar> : {
-        t.Set = t.Set;
-        t.NewSet = <Prout NSET t.NewSet><DropUseless_ e.Grammar (t.NewSet)>;
-    };
-}
-
-
-DropUseless {
-    e.Grammar
-    , <Set-Create> : t.Set
-    , <FindNonTerm e.Grammar> : e.NTerms
-    , <Prout NOT e.NTerms> :
-    , <Set-ListInsert t.Set (e.NTerms)> : t.Set^
-    , <Prout SET t.Set> :
-    , <DropUseless_ e.Grammar (t.Set)> : t.Set^
-    , <Prout SET t.Set> :
-    = <DropNotInSet (t.Set) () e.Grammar>;
-}
-
-FindNonTerm {
-    s.T' ➡ 'e.Rule'\n'e.Grammar
-*    , <Prout s.T> :
-    , <Map &IsNTerm e.Rule> : {
-        e.B True e.E = <FindNonTerm e.Grammar>;
-        e.E = (s.T)<FindNonTerm e.Grammar>;
-    };
-    s.T' ➡ 'e.Rule
-    , <Map &IsNTerm e.Rule> : {
-        e.B True e.E = ;
-        e.E = (s.T)
-    };
-}
-
-IsNTerm {
-    s.A
-    , <Compare (<Ord s.A>) <Ord 'Z'>> : {
-        '-'
-        , <Compare (<Ord s.A>) <Ord 'A'>> : {
-            '-' = False;
-            s.E = True;
-        };
-        s.E = False;
+Order {
+    (e.Ni) e.Nj (e.N)
+    , <List-Get <Cp 'Paths'> e.N> : {
+        /*empty*/ = <Cp '>'>;
+        e.LB1 (e.Ni) e.LB2 e.Nj e.LE = <Prout e.LB1 (e.Ni) e.LB2 (e.Nj) e.LE><Order (e.Ni) e.Nj (<Add (e.N) 1>)>;
+        e.Reverse = <Cp '<'>;
     }
 }
 
-GetAllNTerm {
-    s.T' ➡ 'e.Rule'\n'e.Grammar
-    = (s.T)<GetAllNTerm e.Grammar>;
-    s.T' ➡ 'e.Rule
-    = (s.T);
+Sort {
+  /* пусто */ = /* пусто */;
+
+  t.Pivot e.Items
+    = <Reduce
+        {
+          ((e.Less) (e.Equal) (e.Greater)) t.Next
+            = <Order t.Next t.Pivot (0)>
+            : {
+                '<' = ((e.Less t.Next) (e.Equal) (e.Greater));
+                '>' = ((e.Less) (e.Equal) (e.Greater t.Next));
+              };
+        }
+        ( (/* less */) (t.Pivot /* equal */) (/* greater */) )
+        e.Items
+      >
+    : ((e.Less) (e.Equal) (e.Greater))
+    = <Sort e.Less> e.Equal <Sort e.Greater>;
 }
 
-FIRSTLoop {
-    (true) t.List (e.NTerms) e.Grammar
-
+Unicode {
+    s.S1 s.S2 e.S3
+    , <Map {
+        s.A
+        , <Compare (<Ord s.A>) 127> : {
+            '+' = False;
+            s.E = True;
+        };
+    } s.S1 s.S2 e.S3> : {
+        True True True = False s.S1 s.S2 e.S3;
+        e.Else = True s.S1 s.S2 e.S3;
+    };
+    s.A = False s.A;
+*    s.A s.B = False s.A s.B;
 }
-
-GetFIRST {
-    e.Grammar
-    , <List-Create> : t.List
-    , <GetAllNTerm e.Grammar> : e.NTerms
-    , <List-InitForEach t.List (e.NTerms)> : t.List^
-    = <FIRSTLoop (true) t.List (e.NTerms) e.Grammar>;
-}
-*/

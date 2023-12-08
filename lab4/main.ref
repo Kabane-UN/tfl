@@ -5,109 +5,128 @@ $EXTERN List-Create, List-Insert, List-InitForEach,
 List-Append, List-AppendList, List-Get, List-ToJSON, List-Keys, List-WhereIn;
 $ENTRY GO {
     , <Open 'r' 1 <Arg 1>> :
-    , <ReadLines 1 ('#priority')> : '#for\n'e.Type'\n'
+    , <Get 1> : '#for'
+    , <Get 1> : e.Type
     , e.Type : {
         'i'
+        , <Get 1> : e.pofik
         , <ParseAutomata 1> : t.Automata
         , <ParseFollow 1> : t.Follow
         , <Close 1> :
         , <Open 'w' 1 <Arg 2>> :
         = <Putout 1 <SLRCheck t.Automata t.Follow>><Close 1>;
         'p'
+        , <Get 1> : e.pofik
         , <ReadLines 1 ('#state')> : e.Priority'\n#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'
             e.Counter'\n#string\n'e.String
         , e.Priority : {
-            'true' = <Br '<=>'><Br '>=<'>;
-            'false' = <Br '<=<'><Br '>=>'>;
+            'false' = <Br '<=>'><Br '>=<'>;
+            'true' = <Br '<=<'><Br '>=>'>;
         } :
         , <ParseSTerms 1> : t.Terms
 *        , <Prout <List-ToJSON t.Terms>> :
         , <ParsePaths 1> : t.Paths
 *        , <Prout <List-ToJSON t.Paths>> :
         , <ParseFollow 1> : t.Follow
+*        , <Prout <List-ToJSON t.Follow>> :
         , <Br 'Paths='t.Paths> :
+*        , <Prout SORED <Sort <List-Keys t.Terms>>> :
         , <Br 'OrdTerms='<Sort <List-Keys t.Terms>>> :
-        , <PanicRead t.Follow (<Numb e.Arrow>) (<Numb e.Line>) (<Numb e.Counter>) e.String> :
+        , <Lenw e.String> : s.SL e.String
+        , <Br 'StrLen='s.SL> :
+*        , <Prout e.String'shift by 'e.Arrow> :
+        , <Shift (<Numb e.Arrow>) e.String> : e.String^
+*        , <Prout 'is 'e.String> :
+*        , <Exit 0> :
+        , <PanicRead t.Follow t.Terms (<Numb e.Arrow>) (<Numb e.Line>) (<Numb e.Counter>) e.String> :
         = ;
     };
 }
 
+Shift {
+    (1) e.String
+    = e.String;
+    (e.L) s.C e.String
+    = <Shift (<Sub (e.L) 1>) e.String>;
+}
+
 PanicRead {
-    t.Follow (e.Arrow) (e.Line) (e.Counter) /*empty*/
+    t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) /*empty*/
     = <Prout 'Is it possible?'><Exit 1>;
-    t.Follow (e.Arrow) (e.Line) (e.Counter) '\n' e.String
-    = <PanicRead t.Follow
+    t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) 'Δ\n'
+    = <WriteResults (<Add (<Cp 'StrLen'>) 1>) (e.Line) (e.Counter) ('auf') 'wiedersehen'>;
+    t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
+    , <Prout newline> :
+    = <PanicRead t.Follow t.Terms
         (e.Arrow) (<Add (e.Line) 1>)
-        (<Sub (<Add (e.Counter) <Sub (e.Arrow) e.Counter>>) 1>) e.String>;
-    t.Follow (e.Arrow) (e.Line) (e.Counter) s.C1 s.C2 e.String
-    , <Unicode s.C1 s.C2> : {
-        True e.W
-        , e.String : {
-            s.C3 e.String
-            , <Unicode s.C1 s.C2 s.C3> : {
-                True e.W = <PanicRead (U e.W) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
-                False e.W = <PanicRead (U s.C1 s.C2) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
-            };
-            /*empty*/ =
+        (<Sub (e.Arrow) 1>) e.String>;
 
-        };
-        False e.W = <PanicRead (NU s.C1) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String>;
+    t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) s.C e.String
+*    , <Prout s.C' and 'e.String' end'> :
+    , <IsFollow t.Follow t.Terms s.C> : {
+        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 1>) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <PanicRead t.Follow t.Terms (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
     };
 
-    t.Follow (e.Arrow) (e.Line) (e.Counter) s.C e.String
-    , <IsFollow t.Follow s.C> : {
-        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
-        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
-    };
-
-    (U e.W) t.Follow (e.Arrow) (e.Line) (e.Counter) e.W e.String
-    , <IsFollow t.Follow e.W> : {
-        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
-        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
-    };
-
-    (NU s.C) t.Follow (e.Arrow) (e.Line) (e.Counter) s.C e.String
-    , <IsFollow t.Follow s.C> : {
-        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
-        /*empty*/ = <PanicRead t.Follow (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
-    };
-    e.Else = <Prout e.Else> <Exit 0 >;
+    t.Follow t.Terms e.Else = <Prout ERR e.Else> <Exit 0 >;
 
 }
 
 WriteResults {
     (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len
     , <Open 'w' 2 <Arg 2>> :
-    = <Putout '#arrow\n'<Symb e.Arrow>'\n#line\n'<Symb e.Line>'\n#counter\n'<Symb e.Counter>
-        '\n#nterm\n'<Symb e.T>'\n#drop\n'<Symb e.Len>><Close 2>;
+*    , <Prout (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len> :
+    = <Putout 2 '#arrow\n'<Symb e.Arrow>'\n#line\n'<Symb e.Line>'\n#counter\n'<Symb e.Counter>
+        '\n#nterm\n'e.T'\n#drop\n'<Symb e.Len>><Close 2>;
 }
 
-OlderTerm {
-    e.TB e.T e.TE
-    , <Cp 'OrdTerms'> : e.T e.OTE
+HighestTerms_ {
+    (e.TB(e.T)e.TE) (e.T) e.Terms
     = e.T;
+    (e.TB(e.T)e.TE) (e.T2) e.Terms
+    = <HighestTerms_ (e.TB(e.T)e.TE) e.Terms>;
+    (e.TB(e.T)e.TE) /*empty*/
+    = <Prout ERR> <Exit 1>;
 }
 
-OlderRule {
-    (e.Max) (e.T1' ➡ 'e.a'.'e.b) e.Rules
+HighestTerm {
+    e.T
+    , <Cp 'OrdTerms'> : e.OTerms
+*    , <Prout RUN (e.T)' 'e.OTerms' : '<HighestTerms_ (e.T) e.OTerms>> :
+    = <HighestTerms_ (e.T) e.OTerms>;
+}
+
+HighestRule {
+    (e.Max) (e.a'.'e.b) e.Rules
     , <Lenw e.a> : s.L e.a
     , <Compare (e.Max) s.L> : {
-        '+' = <OlderRule (e.Max) e.Rules>;
-        e.le = <OlderRule (s.L) e.Rules>;
+        '+' = <HighestRule (e.Max) e.Rules>;
+        e.le = <HighestRule (s.L) e.Rules>;
     };
+    (e.Max) = e.Max;
+}
+
+Filter {
+    (e.LB(e.I)e.LE) e.KB (e.I) e.KE
+    = (e.I)<Filter (e.LB e.LE) e.KB e.KE>;
+    (e.L) e.V
+    = ;
 }
 
 IsFollow {
-    t.Follow e.C
+    t.Follow t.Terms e.C
     , <List-WhereIn t.Follow e.C> : {
         /*empty*/
-*        , <Prout NOTHING (s.C) IN t.Follow> :
+*        , <Prout NOTHING (e.C) IN t.Follow> :
         = ;
-        e.Terms
-        , <Print FOUND e.C IN e.Terms> :
-        , <OlderTerm e.Terms> : e.Term
-        , <List-Get t.Follow e.Term> : e.Rules
-        = <OlderRule (0) e.Rules>;
+        e.Terms1
+*        , <Prout (e.Terms1) <List-Keys t.Terms>> :
+*        , <Filter (e.Terms1) <List-Keys t.Terms>> : e.Terms1^
+*        , <Prout (e.Terms1)> :
+*        , <Prout FOUND e.C IN e.Terms> :
+        , <HighestTerm e.Terms1> : e.Term
+        , <List-Get t.Terms e.Term> : e.Rules
+        = (<HighestRule (0) e.Rules>) e.Term;
     }
 }
 
@@ -320,7 +339,7 @@ Order {
     (e.Ni) e.Nj (e.N)
     , <List-Get <Cp 'Paths'> e.N> : {
         /*empty*/ = <Cp '>'>;
-        e.LB1 (e.Ni) e.LB2 e.Nj e.LE = <Prout e.LB1 (e.Ni) e.LB2 (e.Nj) e.LE><Order (e.Ni) e.Nj (<Add (e.N) 1>)>;
+        e.LB1 (e.Ni) e.LB2 e.Nj e.LE = <Order (e.Ni) e.Nj (<Add (e.N) 1>)>;
         e.Reverse = <Cp '<'>;
     }
 }

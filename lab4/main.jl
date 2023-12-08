@@ -563,6 +563,9 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
                 write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))
                 @run_ref
                 arrow, line, count, nterm, drop = parse_com_for_panic(read_from_file("com.txt"))
+                if arrow > length(flow)
+                    @goto accept
+                end
                 for _ ∈ 1:drop
                     pop!(stack)
                 end
@@ -574,6 +577,7 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
             elseif todo.type == "Shift"
                 push!(stack, todo.data)
             elseif todo.type == "Accept"
+                @label accept
                 println("Accepted")
             else
                 rule = grammar¹[todo.data]

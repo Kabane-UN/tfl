@@ -560,6 +560,7 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
             end
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count)")
+                arrow+=1
                 write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))
                 @run_ref
                 arrow, line, count, nterm, drop = parse_com_for_panic(read_from_file("com.txt"))

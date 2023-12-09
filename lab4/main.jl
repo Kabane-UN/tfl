@@ -560,7 +560,7 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
             end
             if todo.type == "Error"
                 println("Error as line $line col $(arrow-count) by term $(current_char)")
-                if arrow > length(flow)
+                if arrow >= length(flow)
                     @goto accept
                 end
                 write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))

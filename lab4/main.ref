@@ -38,9 +38,9 @@ $ENTRY GO {
 *        , <Prout e.String'shift by 'e.Arrow> :
         , <Shift (1) (<Numb e.Line>) (<Numb 0>) (<Numb e.Arrow>) (<Numb 0>) e.String>
         : (e.Line^) (e.Counter^) e.String^
-*        , <Prout 'is 'e.String' line is 'e.Line> :
+        , <Prout 'is 'e.String'line is 'e.Line> :
 *        , <Exit 0> :
-        , <PanicRead t.Follow t.Terms (<Numb e.Arrow>) (e.Line) (e.Counter) e.String> :
+        , <PanicRead t.Follow t.Terms (<Add (<Numb e.Arrow>) 1>) (e.Line) (e.Counter) e.String> :
         = ;
     };
 }
@@ -70,9 +70,8 @@ PanicRead {
     , <Prout delta> :
     = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('F') 0>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
-*    , <Prout NEWLINE > :
     , <IsFollow t.Follow t.Terms '$'> : {
-        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 1>) (e.Line) (e.Counter) (e.T) e.Len>;
+        (e.Len) e.T = <Prout ('$')' 'e.Arrow><WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms
             (<Add (e.Arrow) 1>) (<Add (e.Line) 1>) (e.Arrow) e.String>;
     };
@@ -84,7 +83,7 @@ PanicRead {
     } : s.C
     , <Prout (s.C)' 'e.Arrow' '> :
     , <IsFollow t.Follow t.Terms s.C> : {
-        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 1>) (e.Line) (e.Counter) (e.T) e.Len>;
+        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
     };
 

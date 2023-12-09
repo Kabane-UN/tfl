@@ -33,8 +33,26 @@ $ENTRY List-InitForEach {
 }
 
 $ENTRY List-Get {
-    [List (e.LB((e.K) (e.V)) e.LE)] e.K = e.V;
+    [List (e.LB((e.K) (e.V)) e.LE)] e.K
+     = e.V;
 
-    [List (e.L)] e.K = ;
+    [List (e.L)] e.K
+    = ;
+}
+
+$ENTRY List-Keys {
+    [List ()]
+    = ;
+    [List (((e.K) e.V)e.L)]
+    = (e.K)<List-Keys [List (e.L)]>;
+}
+
+$ENTRY List-WhereIn {
+    [List ()] e.I
+    = ;
+    [List (e.LB ((e.K) (e.VB (e.I) e.VE)) e.LE)] e.I
+    = (e.K)<List-WhereIn [List (e.LE)] e.I>;
+    [List (e.L)] e.I
+    = ;
 }
 

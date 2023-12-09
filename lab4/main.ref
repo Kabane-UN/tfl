@@ -66,14 +66,20 @@ PanicRead {
     = <Prout 'Is it possible?'><Exit 1>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) 'Δ\n'
     , <Prout delta> :
-    = <WriteResults (e.Arrow) (e.Line) (e.Counter) (0) 0>;
+    = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('F') 0>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
 *    , <Prout NEWLINE > :
-    = <PanicRead t.Follow t.Terms
-        (<Add (e.Arrow) 1>) (<Add (e.Line) 1>)
-        (e.Arrow) e.String>;
+    , <IsFollow t.Follow t.Terms '$'> : {
+        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 1>) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <PanicRead t.Follow t.Terms
+            (<Add (e.Arrow) 1>) (<Add (e.Line) 1>) (e.Arrow) e.String>;
+    };
 
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) s.C e.String
+    , s.C : {
+        ' ' = '_';
+        s.C = s.C;
+    } : s.C
     , <IsFollow t.Follow t.Terms s.C> : {
         (e.Len) e.T = <WriteResults (<Add (e.Arrow) 1>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
@@ -86,7 +92,7 @@ PanicRead {
 WriteResults {
     (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len
     , <Open 'w' 2 <Arg 2>> :
-    , <Prout (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len> :
+*    , <Prout (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len> :
     = <Putout 2 '#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'e.Counter
         '\n#nterm\n'e.T'\n#drop\n'<Symb e.Len>><Close 2>;
 }

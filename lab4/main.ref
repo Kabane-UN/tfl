@@ -33,7 +33,6 @@ $ENTRY GO {
         , <Br 'StrLen='s.SL> :
         , <Shift (1) (<Numb 0>) (<Numb e.Arrow>) (<Numb 0>) e.String>
         : (e.Line^) (e.Counter^) e.String^
-        , <Prout e.String> :
 
         , <PanicRead t.Follow t.Terms (<Add (<Numb e.Arrow>) 1>) (e.Line) (e.Counter) e.String> :
         = ;
@@ -60,7 +59,7 @@ PanicRead {
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) 'Δ\n'
     , <IsFollow t.Follow t.Terms 'Δ'> : {
         (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
-        /*empty*/ = <Prout 'Is it possible? delta'><Exit 1>;
+        /*empty*/ = <Exit 1>;
 *    = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('T') 0><Exit 0>;
 
     };

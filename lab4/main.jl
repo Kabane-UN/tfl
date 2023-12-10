@@ -564,7 +564,12 @@ function parse_string(str, parse_table, states, grammar¹, paths, grammar, follo
                     @goto accept
                 end
                 write_to_file("com.txt", gen_com_for_panic(arrow, line, count, str, states[state], paths, follow_set, priority))
-                @run_ref
+                try
+                    @run_ref
+                catch _
+                    arrow = length(flow)
+                    @goto accept
+                end
                 arrow, line, count, nterm, drop = parse_com_for_panic(read_from_file("com.txt"))
                 if arrow > length(flow)
                     @goto accept
@@ -642,7 +647,6 @@ begin
     write_to_file("com.txt", gen_com_for_is_srl(states, follow_set))
     @run_ref
     is_srl = parse_com_is_srt(read_from_file("com.txt"))
-    println(parse_com_for_panic(read_from_file("com.txt")))
     if is_srl
         table = gen_table(states, gotos, grammar.terms, grammar.nterms, grammar¹, follow_set)
         parse_string(str, table, states, grammar¹, paths, grammar, follow_set, priority)

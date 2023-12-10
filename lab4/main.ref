@@ -42,7 +42,7 @@ $ENTRY GO {
 *        , <Prout e.String'shift by 'e.Arrow> :
         , <Shift (1) (<Numb e.Line>) (<Numb 0>) (<Numb e.Arrow>) (<Numb 0>) e.String>
         : (e.Line^) (e.Counter^) e.String^
-        , <Prout 'is 'e.String'line is 'e.Line> :
+*        , <Prout 'is 'e.String'line is 'e.Line> :
 *        , <Exit 0> :
         , <PanicRead t.Follow t.Terms (<Add (<Numb e.Arrow>) 1>) (e.Line) (e.Counter) e.String> :
         = ;
@@ -75,7 +75,7 @@ PanicRead {
     = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('F') 0>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
     , <IsFollow t.Follow t.Terms '$'> : {
-        (e.Len) e.T = <Prout ('$')' 'e.Arrow><WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
+        (e.Len) e.T = <WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms
             (<Add (e.Arrow) 1>) (<Add (e.Line) 1>) (e.Arrow) e.String>;
     };
@@ -85,13 +85,13 @@ PanicRead {
         ' ' = '_';
         s.C = s.C;
     } : s.C
-    , <Prout (s.C)' 'e.Arrow' '> :
+*    , <Prout (s.C)' 'e.Arrow' '> :
     , <IsFollow t.Follow t.Terms s.C> : {
         (e.Len) e.T = <WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
     };
 
-    t.Follow t.Terms e.Else = <Prout ERR e.Else> <Exit 0 >;
+    t.Follow t.Terms e.Else = <Prout PANICERR (e.Else)> <Exit 0 >;
 
 }
 
@@ -109,13 +109,14 @@ HighestTerms_ {
     (e.TB(e.T)e.TE) (e.T2) e.Terms
     = <HighestTerms_ (e.TB(e.T)e.TE) e.Terms>;
     (e.TB(e.T)e.TE) /*empty*/
-    = <Prout ERR> <Exit 1>;
+    = <Exit 1>False;
+*    <Exit 1>;
 }
 
 HighestTerm {
     e.T
     , <Cp 'OrdTerms'> : e.OTerms
-*    , <Prout RUN (e.T)' 'e.OTerms' : '<HighestTerms_ (e.T) e.OTerms>> :
+*    , <Prout RUN (e.T)' 'e.OTerms> :
     = <HighestTerms_ (e.T) e.OTerms>;
 }
 
@@ -146,11 +147,15 @@ IsFollow {
 *        , <Prout (e.Terms1) <List-Keys t.Terms>> :
 *        , <Filter (e.Terms1) <List-Keys t.Terms>> : e.Terms1^
 *        , <Prout (e.Terms1)> :
-*        , <Prout FOUND e.C IN e.Terms> :
-        , <HighestTerm e.Terms1> : e.Term
-        , <List-Get t.Terms e.Term> : e.Rules
-        = (<HighestRule (0) e.Rules>) e.Term;
-    }
+        , <Prout FOUND e.C' 'IN e.Terms1> :
+        , <HighestTerm e.Terms1> : {
+            False
+            = ;
+            e.Term
+            , <List-Get t.Terms e.Term> : e.Rules
+            = (<HighestRule (0) e.Rules>) e.Term;
+        };
+    };
 }
 
 ParseSTerms {
@@ -254,7 +259,7 @@ FindSRConflict {
 
 ShiftReduceState {
     t.Follow e.VB (e.T1' ➡ 'e.a'.'s.X e.b) e.VE
-*    , <Prout (e.T1' ➡ 'e.a'.'s.X e.b) (s.X) (e.b)> :
+*    , <Prout (e.T1' -> 'e.a'.'s.X e.b) (s.X) (e.b)> :
     , s.X e.b : {
         s.X '\'' e.q '\'' e.be = s.X '\'' e.q '\'';
         s.X '\'' e.be = s.X '\'';
@@ -270,6 +275,13 @@ ShiftReduceState {
             False = <ShiftReduceState t.Follow e.VE>;
         };
     };
+    t.Follow e.VB (e.T1' ➡ 'e.a'.') e.VE
+*    , <Prout (e.T1' -> 'e.a'.')> :
+    , <FindSRConflict t.Follow ('Δ') e.VB e.VE> : {
+        True = True;
+        False = <ShiftReduceState t.Follow e.VE>;
+    };
+
     t.Follow e.Else
     = False;
 *    = <Prout NOT FOUND (e.Else)>False;

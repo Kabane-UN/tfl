@@ -9,14 +9,18 @@ $ENTRY GO {
     , <Get 1> : e.Type
     , e.Type : {
         'i'
-        , <Get 1> : e.pofik
+        , <Get 1> : e.e
         , <ParseAutomata 1> : t.Automata
         , <ParseFollow 1> : t.Follow
         , <Close 1> :
+*        , <Exit 0> :
+*        , <Prout <SLRCheck t.Automata t.Follow>> :
+*        , <Exit 0>:
         , <Open 'w' 1 <Arg 2>> :
         = <Putout 1 <SLRCheck t.Automata t.Follow>><Close 1>;
+
         'p'
-        , <Get 1> : e.pofik
+        , <Get 1> : e.e
         , <ReadLines 1 ('#state')> : e.Priority'\n#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'
             e.Counter'\n#string\n'e.String
 *        , <Prout given e.Counter> :
@@ -235,27 +239,33 @@ IsIn {
 }
 
 FindSRConflict {
-    t.Follow (s.a) (s.X) e.VB (e.T1' ➡ 'e.a s.a'.') e.VE
-*    , <Prout MAYBE FOR (s.a) (X s.X)> :
+    t.Follow (e.X) e.VB (e.T1' ➡ 'e.a'.') e.VE
+*    , <Prout MAYBE FOR (e.a) (X s.X)> :
     , <List-Get t.Follow e.T1> : e.F
 *    , <Prout FOLLOW FOR (e.T1) IS e.F> :
-    , <IsIn (e.F) s.X> : {
+    , <IsIn (e.F) e.X> : {
         True = True;
-        False = <FindSRConflict t.Follow (s.a) (s.X) e.VE>;
+        False = <FindSRConflict t.Follow (e.a) (e.X) e.VE>;
     };
-    t.Automata (s.a) (s.X) e.V
+    t.Automata (e.X) e.V
     = False;
-*    = <Prout NOT FOUND FOR (s.a) (s.X) IN e.V>False;
+*    = <Prout NOT FOUND FOR (e.a) (s.X) IN e.V>False;
 }
 
 ShiftReduceState {
-    t.Follow e.VB (e.T1' ➡ 'e.a s.a'.'s.X e.b) e.VE
-*    , <Prout (e.T1' ➡ 'e.a s.a'.'s.X e.b) (s.X) (e.b)> :
-    , <IsNTerm s.X> : {
+    t.Follow e.VB (e.T1' ➡ 'e.a'.'s.X e.b) e.VE
+*    , <Prout (e.T1' ➡ 'e.a'.'s.X e.b) (s.X) (e.b)> :
+    , s.X e.b : {
+        s.X '\'' e.q '\'' e.be = s.X '\'' e.q '\'';
+        s.X '\'' e.be = s.X '\'';
+        s.X e.b = s.X;
+    } : e.X
+*    , <Prout (e.X)> :
+    , <IsNTerm e.X> : {
         True = <ShiftReduceState t.Follow e.VE>;
         False
-*        , <Prout RUN FOR s.X> :
-        , <FindSRConflict t.Follow (s.a) (s.X) e.VB e.VE> : {
+*        , <Prout RUN FOR (e.T1' -> 'e.a'.'s.X e.b)> :
+        , <FindSRConflict t.Follow (e.X) e.VB e.VE> : {
             True = True;
             False = <ShiftReduceState t.Follow e.VE>;
         };
@@ -288,7 +298,7 @@ IsNTerm {
         };
         s.E = False;
     };
-    e.T = True; /*eps?*/
+    e.T = True; /*S''''...'*/
 }
 
 Intersection {
@@ -336,7 +346,7 @@ ReduceReduce {
 SLRCheck {
     t.Automata t.Follow
     , <ShiftReduce t.Automata t.Follow 1> : {
-        True = False;
+        True = false;
         False
         , <ReduceReduce t.Automata t.Follow 1> : {
             True = false;

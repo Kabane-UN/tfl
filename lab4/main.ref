@@ -13,9 +13,6 @@ $ENTRY GO {
         , <ParseAutomata 1> : t.Automata
         , <ParseFollow 1> : t.Follow
         , <Close 1> :
-*        , <Exit 0> :
-*        , <Prout <SLRCheck t.Automata t.Follow>> :
-*        , <Exit 0>:
         , <Open 'w' 1 <Arg 2>> :
         = <Putout 1 <SLRCheck t.Automata t.Follow>><Close 1>;
 
@@ -23,47 +20,37 @@ $ENTRY GO {
         , <Get 1> : e.e
         , <ReadLines 1 ('#state')> : e.Priority'\n#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'
             e.Counter'\n#string\n'e.String
-*        , <Prout given e.Counter> :
         , e.Priority : {
             'false' = <Br '<=>'><Br '>=<'>;
             'true' = <Br '<=<'><Br '>=>'>;
         } :
         , <ParseSTerms 1> : t.Terms
-*        , <Prout <List-ToJSON t.Terms>> :
         , <ParsePaths 1> : t.Paths
-*        , <Prout <List-ToJSON t.Paths>> :
         , <ParseFollow 1> : t.Follow
-*        , <Prout <List-ToJSON t.Follow>> :
         , <Br 'Paths='t.Paths> :
-*        , <Prout SORTED <Sort <List-Keys t.Terms>>> :
         , <Br 'OrdTerms='<Sort <List-Keys t.Terms>>> :
         , <Lenw e.String> : s.SL e.String
         , <Br 'StrLen='s.SL> :
-*        , <Prout e.String'shift by 'e.Arrow> :
-        , <Shift (1) (<Numb e.Line>) (<Numb 0>) (<Numb e.Arrow>) (<Numb 0>) e.String>
+        , <Shift (1) (<Numb 0>) (<Numb e.Arrow>) (<Numb 0>) e.String>
         : (e.Line^) (e.Counter^) e.String^
-*        , <Prout 'is 'e.String'line is 'e.Line> :
-*        , <Exit 0> :
+        , <Prout e.String> :
+
         , <PanicRead t.Follow t.Terms (<Add (<Numb e.Arrow>) 1>) (e.Line) (e.Counter) e.String> :
         = ;
     };
 }
 
 Shift {
-    (e.Line) (e.LineIgnore) (e.Counter) (e.Arrow) (e.Arrow) e.String
+    (e.Line) (e.Counter) (e.Arrow) (e.Arrow) e.String
     = (e.Line) (e.Counter) e.String;
-    (e.Line) (e.Line) (e.Counter) (e.Arrow) (e.Cur) 'Δ\n'
+
+    (e.Line) (e.Counter) (e.Arrow) (e.Cur) 'Δ\n'
     = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('T') 0><Exit 0>;
-    (e.Line) (e.Line) (e.Counter) (e.Arrow) (e.Cur) s.C e.String
-*    , <Prout e.Line (e.Cur' 'e.Arrow)> :
+
+    (e.Line) (e.Counter) (e.Arrow) (e.Cur) s.C e.String
     , s.C : {
-        '\n' = <Shift (<Add (e.Line) 1>) (e.Line) (<Add (e.Cur) 1>) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
-        s.C = <Shift (e.Line) (e.Line) (e.Counter) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
-    };
-    (e.Line) (e.LineIgnore) (e.Counter) (e.Arrow) (e.Cur) s.C e.String
-    , s.C : {
-        '\n' = <Shift (<Add (e.Line) 1>) (e.LineIgnore) (<Add (e.Cur) 1>) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
-        s.C = <Shift (e.Line) (e.LineIgnore) (e.Counter) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
+        '\n' = <Shift (<Add (e.Line) 1>) (<Add (e.Cur) 1>) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
+        s.C = <Shift (e.Line) (e.Counter) (e.Arrow) (<Add (e.Cur) 1>) e.String>;
     };
 }
 
@@ -71,8 +58,12 @@ PanicRead {
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) /*empty*/
     = <Prout 'Is it possible?'><Exit 1>;
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) 'Δ\n'
-    , <Prout delta> :
-    = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('F') 0>;
+    , <IsFollow t.Follow t.Terms 'Δ'> : {
+        (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
+        /*empty*/ = <Prout 'Is it possible? delta'><Exit 1>;
+*    = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('T') 0><Exit 0>;
+
+    };
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
     , <IsFollow t.Follow t.Terms '$'> : {
         (e.Len) e.T = <WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
@@ -85,12 +76,10 @@ PanicRead {
         ' ' = '_';
         s.C = s.C;
     } : s.C
-*    , <Prout (s.C)' 'e.Arrow' '> :
     , <IsFollow t.Follow t.Terms s.C> : {
         (e.Len) e.T = <WriteResults (<Add (e.Arrow) 0>) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <PanicRead t.Follow t.Terms (<Add (e.Arrow) 1>) (e.Line) (e.Counter) e.String>;
     };
-
     t.Follow t.Terms e.Else = <Prout PANICERR (e.Else)> <Exit 0 >;
 
 }
@@ -98,7 +87,6 @@ PanicRead {
 WriteResults {
     (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len
     , <Open 'w' 2 <Arg 2>> :
-*    , <Prout (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len> :
     = <Putout 2 '#arrow\n'e.Arrow'\n#line\n'e.Line'\n#counter\n'e.Counter
         '\n#nterm\n'e.T'\n#drop\n'<Symb e.Len>><Close 2>;
 }
@@ -109,14 +97,13 @@ HighestTerms_ {
     (e.TB(e.T)e.TE) (e.T2) e.Terms
     = <HighestTerms_ (e.TB(e.T)e.TE) e.Terms>;
     (e.TB(e.T)e.TE) /*empty*/
-    = <Exit 1>False;
+    = False;
 *    <Exit 1>;
 }
 
 HighestTerm {
     e.T
     , <Cp 'OrdTerms'> : e.OTerms
-*    , <Prout RUN (e.T)' 'e.OTerms> :
     = <HighestTerms_ (e.T) e.OTerms>;
 }
 
@@ -140,14 +127,8 @@ Filter {
 IsFollow {
     t.Follow t.Terms e.C
     , <List-WhereIn t.Follow e.C> : {
-        /*empty*/
-*        , <Prout NOTHING (e.C) IN t.Follow> :
         = ;
         e.Terms1
-*        , <Prout (e.Terms1) <List-Keys t.Terms>> :
-*        , <Filter (e.Terms1) <List-Keys t.Terms>> : e.Terms1^
-*        , <Prout (e.Terms1)> :
-        , <Prout FOUND e.C' 'IN e.Terms1> :
         , <HighestTerm e.Terms1> : {
             False
             = ;
@@ -245,38 +226,31 @@ IsIn {
 
 FindSRConflict {
     t.Follow (e.X) e.VB (e.T1' ➡ 'e.a'.') e.VE
-*    , <Prout MAYBE FOR (e.a) (X s.X)> :
     , <List-Get t.Follow e.T1> : e.F
-*    , <Prout FOLLOW FOR (e.T1) IS e.F> :
     , <IsIn (e.F) e.X> : {
         True = True;
         False = <FindSRConflict t.Follow (e.a) (e.X) e.VE>;
     };
     t.Automata (e.X) e.V
     = False;
-*    = <Prout NOT FOUND FOR (e.a) (s.X) IN e.V>False;
 }
 
 ShiftReduceState {
     t.Follow e.VB (e.T1' ➡ 'e.a'.'s.X e.b) e.VE
-*    , <Prout (e.T1' -> 'e.a'.'s.X e.b) (s.X) (e.b)> :
     , s.X e.b : {
         s.X '\'' e.q '\'' e.be = s.X '\'' e.q '\'';
         s.X '\'' e.be = s.X '\'';
         s.X e.b = s.X;
     } : e.X
-*    , <Prout (e.X)> :
     , <IsNTerm e.X> : {
         True = <ShiftReduceState t.Follow e.VE>;
         False
-*        , <Prout RUN FOR (e.T1' -> 'e.a'.'s.X e.b)> :
         , <FindSRConflict t.Follow (e.X) e.VB e.VE> : {
             True = True;
             False = <ShiftReduceState t.Follow e.VE>;
         };
     };
     t.Follow e.VB (e.T1' ➡ 'e.a'.') e.VE
-*    , <Prout (e.T1' -> 'e.a'.')> :
     , <FindSRConflict t.Follow ('Δ') e.VB e.VE> : {
         True = True;
         False = <ShiftReduceState t.Follow e.VE>;
@@ -284,7 +258,6 @@ ShiftReduceState {
 
     t.Follow e.Else
     = False;
-*    = <Prout NOT FOUND (e.Else)>False;
 }
 
 ShiftReduce {
@@ -292,7 +265,6 @@ ShiftReduce {
     , <List-Get t.Automata <Symb e.N>> : {
         /*empty*/ = False;
         e.V
-*        , <Prout (e.N) (e.V)> :
         , <ShiftReduceState t.Follow e.V> : {
             True = True;
             False = <ShiftReduce t.Automata t.Follow <Add (e.N) 1>>;
@@ -403,20 +375,4 @@ Sort {
       >
     : ((e.Less) (e.Equal) (e.Greater))
     = <Sort e.Less> e.Equal <Sort e.Greater>;
-}
-
-Unicode {
-    s.S1 s.S2 e.S3
-    , <Map {
-        s.A
-        , <Compare (<Ord s.A>) 127> : {
-            '+' = False;
-            s.E = True;
-        };
-    } s.S1 s.S2 e.S3> : {
-        True True True = False s.S1 s.S2 e.S3;
-        e.Else = True s.S1 s.S2 e.S3;
-    };
-    s.A = False s.A;
-*    s.A s.B = False s.A s.B;
 }

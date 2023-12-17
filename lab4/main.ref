@@ -60,8 +60,6 @@ PanicRead {
     , <IsFollow t.Follow t.Terms 'Δ'> : {
         (e.Len) e.T = <WriteResults (e.Arrow) (e.Line) (e.Counter) (e.T) e.Len>;
         /*empty*/ = <Exit 1>;
-*    = <WriteResults (e.Arrow) (e.Line) (e.Counter) ('T') 0><Exit 0>;
-
     };
     t.Follow t.Terms (e.Arrow) (e.Line) (e.Counter) '\n' e.String
     , <IsFollow t.Follow t.Terms '$'> : {
@@ -97,7 +95,6 @@ HighestTerms_ {
     = <HighestTerms_ (e.TB(e.T)e.TE) e.Terms>;
     (e.TB(e.T)e.TE) /*empty*/
     = False;
-*    <Exit 1>;
 }
 
 HighestTerm {
@@ -226,6 +223,7 @@ IsIn {
 FindSRConflict {
     t.Follow (e.X) e.VB (e.T1' ➡ 'e.a'.') e.VE
     , <List-Get t.Follow e.T1> : e.F
+
     , <IsIn (e.F) e.X> : {
         True = True;
         False = <FindSRConflict t.Follow (e.a) (e.X) e.VE>;
@@ -235,27 +233,28 @@ FindSRConflict {
 }
 
 ShiftReduceState {
-    t.Follow e.VB (e.T1' ➡ 'e.a'.'s.X e.b) e.VE
+    t.Follow (e.V) e.VB (e.T1' ➡ 'e.a'.'s.X e.b) e.VE
     , s.X e.b : {
         s.X '\'' e.q '\'' e.be = s.X '\'' e.q '\'';
         s.X '\'' e.be = s.X '\'';
         s.X e.b = s.X;
     } : e.X
     , <IsNTerm e.X> : {
-        True = <ShiftReduceState t.Follow e.VE>;
+        True = <ShiftReduceState t.Follow (e.V) e.VE>;
         False
-        , <FindSRConflict t.Follow (e.X) e.VB e.VE> : {
+        , e.V : e.V2B (e.T1' ➡ 'e.a'.'s.X e.b) e.V2E
+        , <FindSRConflict t.Follow (e.X) e.V2B e.V2E> : {
             True = True;
-            False = <ShiftReduceState t.Follow e.VE>;
+            False = <ShiftReduceState t.Follow (e.V) e.VE>;
         };
     };
-    t.Follow e.VB (e.T1' ➡ 'e.a'.') e.VE
+    t.Follow (e.V) e.VB (e.T1' ➡ 'e.a'.') e.VE
     , <FindSRConflict t.Follow ('Δ') e.VB e.VE> : {
         True = True;
-        False = <ShiftReduceState t.Follow e.VE>;
+        False = <ShiftReduceState t.Follow (e.V) e.VE>;
     };
 
-    t.Follow e.Else
+    t.Follow (e.V) e.Else
     = False;
 }
 
@@ -264,7 +263,7 @@ ShiftReduce {
     , <List-Get t.Automata <Symb e.N>> : {
         /*empty*/ = False;
         e.V
-        , <ShiftReduceState t.Follow e.V> : {
+        , <ShiftReduceState t.Follow (e.V) e.V> : {
             True = True;
             False = <ShiftReduce t.Automata t.Follow <Add (e.N) 1>>;
         };
@@ -285,7 +284,7 @@ IsNTerm {
 }
 
 Intersection {
-    (e.TB(e.T)e.TE) e.TBB e.T e.TEE
+    (e.TB(e.T)e.TE) e.TBB (e.T) e.TEE
     = True;
     (e.T1) e.T2
     = False;
@@ -304,12 +303,13 @@ FindRRConflict {
 }
 
 ReduceReduceState {
-    t.Follow e.VB (e.A' ➡ 'e.aa'.') e.VE
-    , <FindRRConflict t.Follow (e.A) e.VE> : {
+    t.Follow (e.V) e.VB (e.A' ➡ 'e.aa'.') e.VE
+    , e.V : e.V2B (e.A' ➡ 'e.aa'.') e.V2E
+    , <FindRRConflict t.Follow (e.A) e.V2B e.V2E> : {
         True = True;
-        False = <ShiftReduceState t.Follow e.VE>;
+        False = <ReduceReduceState t.Follow (e.V) e.VE>;
     };
-    t.Follow e.Else
+    t.Follow (e.V) e.Else
     = False;
 }
 
@@ -318,7 +318,7 @@ ReduceReduce {
     , <List-Get t.Automata <Symb e.N>> : {
         /*empty*/ = False;
         e.V
-        , <ReduceReduceState t.Follow e.V> : {
+        , <ReduceReduceState t.Follow (e.V) e.V> : {
             True = True;
             False = <ReduceReduce t.Automata t.Follow <Add (e.N) 1>>;
         };
